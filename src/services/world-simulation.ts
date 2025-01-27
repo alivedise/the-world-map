@@ -1,70 +1,74 @@
-import { MapGenerator } from './map-generator';
-
-export interface WorldState {
-  mapData: number[][];
-  gameTime: number;
-  isPaused: boolean;
-  speed: number;
-}
+import { GameState } from './game-state';
+import { GameLoop } from './game-loop';
 
 export class WorldSimulation {
-  private mapGenerator: MapGenerator;
-  private state: WorldState;
-  private subscribers: ((state: WorldState) => void)[] = [];
+  private gameState: GameState;
+  private gameLoop: GameLoop;
+  private subscribers: Set<() => void> = new Set();
+  private static instance: WorldSimulation;
 
-  constructor(width: number, height: number) {
-    this.mapGenerator = new MapGenerator(width, height);
-    this.state = {
-      mapData: [],
-      gameTime: 0,
-      isPaused: false,
-      speed: 1
-    };
-    this.init();
+  static getInstance(): WorldSimulation {
+    if (!WorldSimulation.instance) {
+      WorldSimulation.instance = new WorldSimulation();
+    }
+    return WorldSimulation.instance;
+  }
+  constructor() {
+    this.gameState = new GameState({ width: 30, height: 20 });
+    this.gameLoop = new GameLoop(this.updateSimulation.bind(this));
   }
 
-  private init() {
-    this.state.mapData = this.mapGenerator.generate();
+  initialize() {
+    this.gameState.initialize();
   }
 
-  subscribe(callback: (state: WorldState) => void) {
-    this.subscribers.push(callback);
-    // 立即發送當前狀態
-    callback({ ...this.state });
-    // 返回取消訂閱的函數
+  start() {
+    this.gameLoop.start();
+  }
+
+  stop() {
+    this.gameLoop.stop();
+  }
+
+  subscribe(callback: () => void) {
+    this.subscribers.add(callback);
+    const gameStateUnsubscribe = this.gameState.subscribe(callback);
+    
     return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+      this.subscribers.delete(callback);
+      gameStateUnsubscribe();
     };
   }
 
-  private notifySubscribers() {
-    this.subscribers.forEach(callback => callback({ ...this.state }));
+  private updateSimulation(deltaTime: number) {
+    this.gameState.updateGameTime(deltaTime);
   }
 
-  update(deltaTime: number) {
-    if (this.state.isPaused) return;
-
-    const adjustedDelta = deltaTime * this.state.speed;
-    this.state.gameTime += adjustedDelta;
-
-    // 在這裡添加世界模擬邏輯
-    // 例如：更新地形、生成事件等
-
-    this.notifySubscribers();
+  setGameSpeed(speed: number) {
+    this.gameState.setGameSpeed(speed);
   }
 
   setPaused(isPaused: boolean) {
-    this.state.isPaused = isPaused;
-    this.notifySubscribers();
+    this.gameState.setPaused(isPaused);
   }
 
-  setSpeed(speed: number) {
-    this.state.speed = speed;
-    this.notifySubscribers();
+  handleTileClick(x: number, y: number) {
+    this.gameState.handleTileClick(x, y);
   }
 
-  // 提供一個方法來獲取當前狀態的副本
-  getState(): WorldState {
-    return { ...this.state };
+  get isPaused() {
+    return this.gameState.isPaused;
+  }
+
+  get gameSpeed() {
+    return this.gameState.gameSpeed;
+  }
+
+  get gameTime() {
+    return this.gameState.gameTime;
+  }
+
+  get mapData() {
+    return this.gameState.mapData;
   }
 } 

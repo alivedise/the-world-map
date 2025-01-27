@@ -1,18 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { WorldSimulation } from '../services/world-simulation';
 
 @customElement('game-control-hud')
 export class GameControlHud extends LitElement {
-  @property({ type: Boolean })
-  private isPaused: boolean = false;
+  @property({ type: Object })
+  simulation!: WorldSimulation;
 
-  @property({ type: Number })
-  private gameSpeed: number = 1;
-
-  @property({ type: Number })
-  private gameTime: number = 0;
-
-  private intervalId?: number;
+  private unsubscribe?: () => void;
 
   static styles = css`
     :host {
@@ -54,46 +49,28 @@ export class GameControlHud extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.startTimer();
+    this.unsubscribe = this.simulation.subscribe(() => {
+      this.requestUpdate();
+    });
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.intervalId) {
-      window.clearInterval(this.intervalId);
-    }
-  }
-
-  private startTimer() {
-    this.intervalId = window.setInterval(() => {
-      if (!this.isPaused) {
-        this.gameTime += 1 * this.gameSpeed;
-      }
-    }, 1000);
+    this.unsubscribe?.();
   }
 
   private togglePause() {
-    this.isPaused = !this.isPaused;
-    this.dispatchEvent(new CustomEvent('game-pause', {
-      detail: { isPaused: this.isPaused },
-      bubbles: true,
-      composed: true
-    }));
+    this.simulation.setPaused(!this.simulation.isPaused);
   }
 
   private setSpeed(speed: number) {
-    this.gameSpeed = speed;
-    this.dispatchEvent(new CustomEvent('game-speed', {
-      detail: { speed },
-      bubbles: true,
-      composed: true
-    }));
+    this.simulation.setGameSpeed(speed);
   }
 
   private formatTime(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
@@ -102,31 +79,31 @@ export class GameControlHud extends LitElement {
       <div class="controls">
         <button
           @click=${this.togglePause}
-          class=${this.isPaused ? 'active' : ''}
+          class=${this.simulation.isPaused ? 'active' : ''}
         >
-          ${this.isPaused ? '繼續' : '暫停'}
+          ${this.simulation.isPaused ? '繼續' : '暫停'}
         </button>
         <button
           @click=${() => this.setSpeed(1)}
-          class=${this.gameSpeed === 1 ? 'active' : ''}
+          class=${this.simulation.gameSpeed === 1 ? 'active' : ''}
         >
           x1
         </button>
         <button
           @click=${() => this.setSpeed(2)}
-          class=${this.gameSpeed === 2 ? 'active' : ''}
+          class=${this.simulation.gameSpeed === 2 ? 'active' : ''}
         >
           x2
         </button>
         <button
           @click=${() => this.setSpeed(3)}
-          class=${this.gameSpeed === 3 ? 'active' : ''}
+          class=${this.simulation.gameSpeed === 3 ? 'active' : ''}
         >
           x3
         </button>
       </div>
       <div class="time-display">
-        遊戲時間: ${this.formatTime(this.gameTime)}
+        遊戲時間: ${this.formatTime(this.simulation.gameTime)}
       </div>
     `;
   }

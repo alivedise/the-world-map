@@ -1,17 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { GameState } from '../services/game-state';
-import { GameLoop } from '../services/game-loop';
-import { MapTile } from './map-tile';
+import { WorldSimulation } from '../services/world-simulation';
 
 @customElement('world-map')
 export class WorldMap extends LitElement {
-  private gameState: GameState;
-  private gameLoop: GameLoop;
+  @property({ type: Object })
+  simulation!: WorldSimulation;
+  
   private unsubscribe?: () => void;
-
-  @property({ type: Array })
-  private mapData: number[][] = [];
 
   static styles = css`
     :host {
@@ -29,48 +25,30 @@ export class WorldMap extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    this.gameState = new GameState({ width: 30, height: 20 });
-    this.gameLoop = new GameLoop(this.updateGameState.bind(this));
-    
-    this.addEventListener('game-pause', ((e: CustomEvent) => {
-      this.gameState.setPaused(e.detail.isPaused);
-    }) as EventListener);
-    
-    this.addEventListener('game-speed', ((e: CustomEvent) => {
-      this.gameState.setGameSpeed(e.detail.speed);
-    }) as EventListener);
-  }
-
   connectedCallback() {
     super.connectedCallback();
-    this.gameState.initialize();
-    this.unsubscribe = this.gameState.subscribe(() => {
-      this.mapData = this.gameState.mapData;
+    this.simulation.initialize();
+    this.unsubscribe = this.simulation.subscribe(() => {
       this.requestUpdate();
     });
-    this.gameLoop.start();
+    this.simulation.start();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.gameLoop.stop();
+    this.simulation.stop();
     this.unsubscribe?.();
   }
 
-  private updateGameState(deltaTime: number) {
-    this.gameState.updateGameTime(deltaTime);
-  }
-
   private handleTileClick(x: number, y: number) {
-    this.gameState.handleTileClick(x, y);
+    this.simulation.handleTileClick(x, y);
   }
 
   render() {
+    const mapData = this.simulation.mapData;
     return html`
       <div class="map-container">
-        ${this.mapData.map((row, y) => 
+        ${mapData.map((row, y) => 
           row.map((tile, x) => html`
             <map-tile
               .type=${tile}

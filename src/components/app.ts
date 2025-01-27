@@ -1,8 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement } from 'lit/decorators.js';
+import { WorldSimulation } from '../services/world-simulation';
 
 @customElement('game-app')
 export class GameApp extends LitElement {
+  private simulation = WorldSimulation.getInstance();
+
   static styles = css`
     :host {
       display: block;
@@ -26,31 +29,12 @@ export class GameApp extends LitElement {
     }
   `;
 
-  private handleGamePause(e: CustomEvent) {
-    const worldMap = this.shadowRoot?.querySelector('world-map');
-    if (worldMap) {
-      worldMap.dispatchEvent(new CustomEvent('game-pause', {
-        detail: e.detail
-      }));
-    }
-  }
-
-  private handleGameSpeed(e: CustomEvent) {
-    const worldMap = this.shadowRoot?.querySelector('world-map');
-    if (worldMap) {
-      worldMap.dispatchEvent(new CustomEvent('game-speed', {
-        detail: e.detail
-      }));
-    }
-  }
-
   render() {
     return html`
-      <world-map></world-map>
+      <world-map .simulation=${this.simulation}></world-map>
       <fps-hud></fps-hud>
       <game-control-hud
-        @game-pause=${this.handleGamePause}
-        @game-speed=${this.handleGameSpeed}
+        .simulation=${this.simulation}
       ></game-control-hud>
     `;
   }
