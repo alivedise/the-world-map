@@ -1,14 +1,14 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { MapGenerator } from '../services/map-generator';
+import { GameState } from '../services/game-state';
 import { GameLoop } from '../services/game-loop';
+import { MapTile } from './map-tile';
 
 @customElement('world-map')
 export class WorldMap extends LitElement {
-  private mapGenerator = new MapGenerator(30, 20);
+  private gameState: GameState;
   private gameLoop: GameLoop;
-  private gameSpeed: number = 1;
-  private isPaused: boolean = false;
+  private unsubscribe?: () => void;
 
   @property({ type: Array })
   private mapData: number[][] = [];
@@ -27,55 +27,44 @@ export class WorldMap extends LitElement {
       background-color: rgba(0, 0, 0, 0.1);
       padding: 1px;
     }
-
-    .tile {
-      width: 32px;
-      height: 32px;
-      transition: background-color 0.3s ease;
-    }
-
-    .tile-0 { /* 草地 */
-      background-color: #7ec850;
-    }
-
-    .tile-1 { /* 沙地 */
-      background-color: #e6c587;
-    }
-
-    .tile-2 { /* 水域 */
-      background-color: #6b8cce;
-    }
-
-    .tile-3 { /* 山地 */
-      background-color: #8b7355;
-    }
-
-    .tile:hover {
-      filter: brightness(1.2);
-      cursor: pointer;
-    }
   `;
 
   constructor() {
     super();
-    this.gameLoop = new GameLoop(this.update.bind(this));
+    this.gameState = new GameState({ width: 30, height: 20 });
+    this.gameLoop = new GameLoop(this.updateGameState.bind(this));
     
     this.addEventListener('game-pause', ((e: CustomEvent) => {
-      this.isPaused = e.detail.isPaused;
+      this.gameState.setPaused(e.detail.isPaused);
     }) as EventListener);
     
     this.addEventListener('game-speed', ((e: CustomEvent) => {
-      this.gameSpeed = e.detail.speed;
+      this.gameState.setGameSpeed(e.detail.speed);
     }) as EventListener);
   }
 
-  firstUpdated() {
-    this.mapData = this.mapGenerator.generate();
+  connectedCallback() {
+    super.connectedCallback();
+    this.gameState.initialize();
+    this.unsubscribe = this.gameState.subscribe(() => {
+      this.mapData = this.gameState.mapData;
+      this.requestUpdate();
+    });
     this.gameLoop.start();
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.gameLoop.stop();
+    this.unsubscribe?.();
+  }
+
+  private updateGameState(deltaTime: number) {
+    this.gameState.updateGameTime(deltaTime);
+  }
+
   private handleTileClick(x: number, y: number) {
-    console.log(`點擊格子座標: x=${x}, y=${y}, 地形類型=${this.mapData[y][x]}`);
+    this.gameState.handleTileClick(x, y);
   }
 
   render() {
@@ -83,11 +72,12 @@ export class WorldMap extends LitElement {
       <div class="map-container">
         ${this.mapData.map((row, y) => 
           row.map((tile, x) => html`
-            <div 
-              class="tile tile-${tile}"
-              @click=${() => this.handleTileClick(x, y)}
-              title="座標: ${x},${y}"
-            ></div>
+            <map-tile
+              .type=${tile}
+              .x=${x}
+              .y=${y}
+              @tile-click=${(e: CustomEvent) => this.handleTileClick(e.detail.x, e.detail.y)}
+            ></map-tile>
           `)
         )}
       </div>
