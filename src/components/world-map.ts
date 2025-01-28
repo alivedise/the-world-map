@@ -6,7 +6,7 @@ import { WorldSimulation } from '../services/world-simulation';
 export class WorldMap extends LitElement {
   @property({ type: Object })
   simulation!: WorldSimulation;
-  
+
   private unsubscribe?: () => void;
 
   static styles = css`

@@ -2,10 +2,16 @@ import { GameState } from './game-state';
 import { GameLoop } from './game-loop';
 
 export class WorldSimulation {
+  private static instance: WorldSimulation;
   private gameState: GameState;
   private gameLoop: GameLoop;
-  private subscribers: Set<() => void> = new Set();
-  private static instance: WorldSimulation;
+
+  private constructor() {
+    this.gameState = new GameState({ width: 30, height: 20 });
+    this.gameLoop = new GameLoop((deltaTime) => {
+      this.gameState.update(deltaTime);
+    });
+  }
 
   static getInstance(): WorldSimulation {
     if (!WorldSimulation.instance) {
@@ -13,9 +19,17 @@ export class WorldSimulation {
     }
     return WorldSimulation.instance;
   }
-  constructor() {
-    this.gameState = new GameState({ width: 30, height: 20 });
-    this.gameLoop = new GameLoop(this.updateSimulation.bind(this));
+
+  // 代理所有需要的 GameState 屬性
+  get population() { return this.gameState.population; }
+  get mapData() { return this.gameState.mapData; }
+  get gameSpeed() { return this.gameState.gameSpeed; }
+  get isPaused() { return this.gameState.isPaused; }
+  get gameTime() { return this.gameState.gameTime; }
+
+  // 代理訂閱機制
+  subscribe(callback: () => void) {
+    return this.gameState.subscribe(callback);
   }
 
   initialize() {
@@ -30,20 +44,6 @@ export class WorldSimulation {
     this.gameLoop.stop();
   }
 
-  subscribe(callback: () => void) {
-    this.subscribers.add(callback);
-    const gameStateUnsubscribe = this.gameState.subscribe(callback);
-    
-    return () => {
-      this.subscribers.delete(callback);
-      gameStateUnsubscribe();
-    };
-  }
-
-  private updateSimulation(deltaTime: number) {
-    this.gameState.updateGameTime(deltaTime);
-  }
-
   setGameSpeed(speed: number) {
     this.gameState.setGameSpeed(speed);
   }
@@ -54,21 +54,5 @@ export class WorldSimulation {
 
   handleTileClick(x: number, y: number) {
     this.gameState.handleTileClick(x, y);
-  }
-
-  get isPaused() {
-    return this.gameState.isPaused;
-  }
-
-  get gameSpeed() {
-    return this.gameState.gameSpeed;
-  }
-
-  get gameTime() {
-    return this.gameState.gameTime;
-  }
-
-  get mapData() {
-    return this.gameState.mapData;
   }
 } 

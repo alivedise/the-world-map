@@ -6,6 +6,13 @@ import { WorldSimulation } from '../services/world-simulation';
 export class GameApp extends LitElement {
   private simulation = WorldSimulation.getInstance();
 
+  constructor() {
+    super();
+    this.simulation.subscribe(() => {
+      this.requestUpdate();
+    });
+  }
+
   static styles = css`
     :host {
       display: block;
@@ -36,6 +43,9 @@ export class GameApp extends LitElement {
       <game-control-hud
         .simulation=${this.simulation}
       ></game-control-hud>
+      <general-statistics-hud
+        .simulation=${this.simulation}
+      ></general-statistics-hud>
     `;
   }
 } 
