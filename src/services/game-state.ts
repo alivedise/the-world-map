@@ -82,7 +82,11 @@ export class GameState {
         mapWidth: this.config.width,
         mapHeight: this.config.height,
       });
-      this.requirementManager.update(deltaTime);
+      this.requirementManager.update(deltaTime, {
+        buildingManager: this.buildingManager,
+        populationManager: this.populationManager,
+        planningManager: this.planningManager,
+      });
       this.planningManager.update(deltaTime);
       this.blockManager.update(deltaTime);
       this.notifySubscribers();

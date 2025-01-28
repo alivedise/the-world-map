@@ -15,6 +15,9 @@ export class MapBuilding extends LitElement {
   @property({ type: Number })
   height: number = 1;
 
+  @property({ type: String })
+  color: string = '#000'; // 默認顏色
+
   static styles = css`
     :host {
       display: block;
@@ -26,7 +29,6 @@ export class MapBuilding extends LitElement {
     }
     .building {
       position: absolute;
-      background-color: rgba(100, 50, 200, 0.7); /* 建築物顏色 */
       border: 1px solid #000;
     }
   `;
@@ -35,7 +37,7 @@ export class MapBuilding extends LitElement {
     return html`
       <div
         class="building"
-        style="width: ${this.width * 32}px; height: ${this.height * 32}px; left: ${this.x * 32}px; top: ${this.y * 32}px;"
+        style="width: ${this.width * 32}px; height: ${this.height * 32}px; left: ${this.x * 32}px; top: ${this.y * 32}px; background-color: ${this.color};"
       ></div>
     `;
   }

@@ -56,7 +56,13 @@ export class WorldMap extends LitElement {
           </div>
         `)}
         ${buildings.map(building => html`
-          <map-building .x=${building.getPosition().x} .y=${building.getPosition().y} .width=${building.getSize().width} .height=${building.getSize().height}></map-building>
+          <map-building 
+            .x=${building.getPosition().x} 
+            .y=${building.getPosition().y} 
+            .width=${building.getSize().width} 
+            .height=${building.getSize().height} 
+            .color=${building.getColor()}>
+          </map-building>
         `)}
       </div>
     `;

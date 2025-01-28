@@ -1,4 +1,4 @@
-import { BuildingType } from './building-type';
+import { BuildingType, buildingTypeParams } from './building-type';
 import RequirementManager from './requirement-manager';
 import PlanningManager from './planning-manager';
 
@@ -25,6 +25,10 @@ export class Building {
     this.position = { x: config.x, y: config.y };
     this.size = config.size;
     this.lifecycle = 'under_construction';
+  }
+
+  getColor(): string {
+    return buildingTypeParams[this.type].color;
   }
 
   update() {
@@ -65,17 +69,39 @@ export default class BuildingManager {
     const requirements = context.requirementManager.getRequirements();
     const plannedBlocks = context.planningManager.getPlannedBlocks();
 
-    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight);
+    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight, requirements);
 
     this.buildings.forEach(building => building.update());
   }
 
   private determineBuildingType(requirements: { [key in BuildingType]: number }): BuildingType {
     // 根據需求決定建築類型的邏輯
-    return BuildingType.RESIDENTIAL; // 這裡簡化為返回住宅區
+    // XXX: 隨機決定建築類型
+    // 計算每種建築類型的總需求權重
+    const totalWeight = Object.values(requirements).reduce((sum, weight) => sum + weight, 0);
+    
+    if (totalWeight === 0) {
+      return BuildingType.RESIDENTIAL;
+    }
+
+    // 根據需求權重隨機選擇建築類型
+    let random = Math.random() * totalWeight;
+    
+    for (const [type, weight] of Object.entries(requirements)) {
+      random -= weight;
+      if (random <= 0) {
+        return type as BuildingType;
+      }
+    }
+    return BuildingType.RESIDENTIAL;
   }
 
-  generateRandomBuildings(numBuildings: number, mapWidth: number, mapHeight: number) {
+  generateRandomBuildings(
+    numBuildings: number, 
+    mapWidth: number, 
+    mapHeight: number, 
+    requirements: { [key in BuildingType]: number }
+  ) {
     for (let i = 0; i < numBuildings; i++) {
       const width = Math.floor(Math.random() * 3) + 1; // 隨機寬度 1-3
       const height = Math.floor(Math.random() * 3) + 1; // 隨機高度 1-3
@@ -90,7 +116,7 @@ export default class BuildingManager {
       });
 
       if (!isOverlapping) {
-        const buildingType = this.determineBuildingType({}); // 根據需求決定建築類型
+        const buildingType = this.determineBuildingType(requirements); // 根據需求決定建築類型
         const building = new Building({ type: buildingType, x, y, size: { width, height } });
         this.buildings.push(building);
       }
