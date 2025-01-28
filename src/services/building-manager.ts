@@ -1,3 +1,7 @@
+import { BuildingType } from './building-type';
+import RequirementManager from './requirement-manager';
+import PlanningManager from './planning-manager';
+
 export interface BuildingConfig {
   type: BuildingType;
   x: number;
@@ -10,44 +14,24 @@ export interface Size {
   height: number;
 }
 
-export enum BuildingType {
-  HOUSE = 'house',
-  SHOP = 'shop',
-  FACTORY = 'factory'
-}
-
 export class Building {
   private type: BuildingType;
-  private x: number;
-  private y: number;
+  private position: { x: number; y: number };
   private size: Size;
-  private constructionProgress: number = 0;
-  private isComplete: boolean = false;
-
+  private lifecycle: 'under_construction' | 'normal' | 'abandoned';
+  
   constructor(config: BuildingConfig) {
     this.type = config.type;
-    this.x = config.x;
-    this.y = config.y;
+    this.position = { x: config.x, y: config.y };
     this.size = config.size;
+    this.lifecycle = 'under_construction';
   }
 
-  update(deltaTime: number) {
-    if (!this.isComplete) {
-      this.constructionProgress += deltaTime;
-      if (this.constructionProgress >= this.getConstructionTime()) {
-        this.isComplete = true;
-      }
-    }
-  }
-
-  private getConstructionTime(): number {
-    switch (this.type) {
-      case BuildingType.HOUSE:
-        return 10; // 10秒
-      case BuildingType.SHOP:
-        return 20; // 20秒
-      case BuildingType.FACTORY:
-        return 30; // 30秒
+  update() {
+    // 更新建築物的狀態
+    if (this.lifecycle === 'under_construction') {
+      // 假設施工時間為5秒
+      this.lifecycle = 'normal'; // 假設施工完成
     }
   }
 
@@ -56,88 +40,46 @@ export class Building {
   }
 
   getPosition(): { x: number; y: number } {
-    return { x: this.x, y: this.y };
+    return this.position;
   }
 
   getSize(): Size {
     return this.size;
   }
 
-  isConstructionComplete(): boolean {
-    return this.isComplete;
-  }
-
-  getConstructionProgress(): number {
-    return this.constructionProgress / this.getConstructionTime();
+  getLifecycle(): string {
+    return this.lifecycle;
   }
 }
 
 export default class BuildingManager {
-  private buildings: Building[];
+  private buildings: Building[] = [];
+  private plannedBlocks: Set<string> = new Set(); // 儲存已規劃的區塊
 
-  constructor() {
-    this.buildings = [];
+  addPlannedBlock(x: number, y: number) {
+    this.plannedBlocks.add(`${x},${y}`);
   }
 
-  addBuilding(config: BuildingConfig): boolean {
-    // 檢查是否可以在指定位置建造
-    if (this.canBuildAt(config)) {
-      const building = new Building(config);
-      this.buildings.push(building);
-      return true;
-    }
-    return false;
-  }
+  update(deltaTime: number, context: { requirementManager: RequirementManager; planningManager: PlanningManager }) {
+    // 使用 context 來獲取其他管理器的狀態
+    const requirements = context.requirementManager.getRequirements();
+    const plannedBlocks = context.planningManager.getPlannedBlocks();
 
-  private canBuildAt(config: BuildingConfig): boolean {
-    // 檢查是否與其他建築物重疊
-    for (const building of this.buildings) {
-      if (this.isOverlapping(building, config)) {
-        return false;
+    this.plannedBlocks.forEach(block => {
+      const [x, y] = block.split(',').map(Number);
+      if (!this.buildings.some(b => b.getPosition().x === x && b.getPosition().y === y)) {
+        // 根據需求生成建築
+        const buildingType = this.determineBuildingType(requirements); // 根據需求決定建築類型
+        const building = new Building({ type: buildingType, x, y, size: { width: 2, height: 2 } });
+        this.buildings.push(building);
       }
-    }
-    return true;
-  }
-
-  private isOverlapping(building: Building, newConfig: BuildingConfig): boolean {
-    const pos1 = building.getPosition();
-    const size1 = building.getSize();
-    const pos2 = { x: newConfig.x, y: newConfig.y };
-    const size2 = newConfig.size;
-
-    return !(pos1.x + size1.width <= pos2.x ||
-             pos2.x + size2.width <= pos1.x ||
-             pos1.y + size1.height <= pos2.y ||
-             pos2.y + size2.height <= pos1.y);
-  }
-
-  update(deltaTime: number) {
-    this.buildings.forEach(building => building.update(deltaTime));
-  }
-
-  getBuildingsAt(x: number, y: number): Building[] {
-    return this.buildings.filter(building => {
-      const pos = building.getPosition();
-      const size = building.getSize();
-      return x >= pos.x && x < pos.x + size.width &&
-             y >= pos.y && y < pos.y + size.height;
-    });
-  }
-
-  getAllBuildings(): Building[] {
-    return [...this.buildings];
-  }
-
-  removeBuilding(x: number, y: number): boolean {
-    const index = this.buildings.findIndex(building => {
-      const pos = building.getPosition();
-      return pos.x === x && pos.y === y;
     });
 
-    if (index !== -1) {
-      this.buildings.splice(index, 1);
-      return true;
-    }
-    return false;
+    this.buildings.forEach(building => building.update());
+  }
+
+  private determineBuildingType(requirements: { [key in BuildingType]: number }): BuildingType {
+    // 根據需求決定建築類型的邏輯
+    return BuildingType.RESIDENTIAL; // 這裡簡化為返回住宅區
   }
 }

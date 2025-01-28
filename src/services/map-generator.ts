@@ -20,8 +20,9 @@ export class MapGenerator {
 
     // 生成一些隨機的地形特徵
     this.generateTerrain(map, 1, 0.1);  // 沙地
-    this.generateTerrain(map, 2, 0.15); // 水域
+    this.generateTerrain(map, 2, 0.25); // 水域
     this.generateTerrain(map, 3, 0.08); // 山地
+    this.generateTerrain(map, 0, 0.1);
     
     return map;
   }

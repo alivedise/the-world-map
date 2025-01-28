@@ -1,6 +1,10 @@
 import { MapGenerator } from './map-generator';
 import PopulationManager from './population-manager';
 import BuildingManager from './building-manager';
+import RequirementManager from './requirement-manager';
+import PlanningManager from './planning-manager';
+import BlockManager from './BlockManager';
+
 export interface GameStateConfig {
   width: number;
   height: number;
@@ -8,22 +12,28 @@ export interface GameStateConfig {
 
 export class GameState {
   private mapGenerator: MapGenerator;
-  private _mapData: number[][] = [];
   private _gameSpeed: number = 1;
   private _isPaused: boolean = false;
   private _gameTime: number = 0;
   private subscribers: Set<() => void> = new Set();
   private populationManager: PopulationManager;
   private buildingManager: BuildingManager;
+  private planningManager: PlanningManager;
+  private requirementManager: RequirementManager;
+  private blockManager: BlockManager;
 
   constructor(config: GameStateConfig) {
     this.mapGenerator = new MapGenerator(config.width, config.height);
     this.populationManager = new PopulationManager();
     this.buildingManager = new BuildingManager();
+    this.planningManager = new PlanningManager();
+    this.requirementManager = new RequirementManager();
+    this.blockManager = new BlockManager(config.width, config.height);
   }
 
   initialize() {
-    this._mapData = this.mapGenerator.generate();
+    const mapData = this.mapGenerator.generate();
+    this.blockManager.setMapData(mapData);
   }
 
   subscribe(callback: () => void) {
@@ -35,7 +45,6 @@ export class GameState {
     this.subscribers.forEach(callback => callback());
   }
 
-  get mapData() { return this._mapData; }
   get gameSpeed() { return this._gameSpeed; }
   get isPaused() { return this._isPaused; }
   get gameTime() { return this._gameTime; }
@@ -53,16 +62,30 @@ export class GameState {
     this.notifySubscribers();
   }
 
+  getContext() {
+    return {
+      population: this.populationManager,
+      building: this.buildingManager,
+    }
+  }
+
   update(deltaTime: number) {
     if (!this._isPaused) {
       this._gameTime += deltaTime * this._gameSpeed;
+
       this.populationManager.update(deltaTime);
-      this.buildingManager.update(deltaTime);
+      this.buildingManager.update(deltaTime, {
+        requirementManager: this.requirementManager,
+        planningManager: this.planningManager
+      });
+      this.requirementManager.update(deltaTime);
+      this.planningManager.update(deltaTime);
+      this.blockManager.update(deltaTime);
       this.notifySubscribers();
     }
   }
 
   handleTileClick(x: number, y: number) {
-    console.log(`點擊格子座標: x=${x}, y=${y}, 地形類型=${this._mapData[y][x]}`);
+    console.log(`點擊格子座標: x=${x}, y=${y}, 地形類型=${this.blockManager.getBlock(x, y)?.terrainType}`);
   }
 } 
