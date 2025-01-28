@@ -17,6 +17,10 @@ export default class BlockManager {
     }
   }
 
+  update(deltaTime: number) {
+    
+  }
+
   setBlockTerrain(x: number, y: number, terrainType: number) {
     if (this.isValidPosition(x, y)) {
       this.blocks[y][x] = new Block(x, y, terrainType);

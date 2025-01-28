@@ -21,8 +21,10 @@ export class GameState {
   private planningManager: PlanningManager;
   private requirementManager: RequirementManager;
   private blockManager: BlockManager;
+  private config: GameStateConfig;
 
   constructor(config: GameStateConfig) {
+    this.config = config;
     this.mapGenerator = new MapGenerator(config.width, config.height);
     this.populationManager = new PopulationManager();
     this.buildingManager = new BuildingManager();
@@ -76,7 +78,9 @@ export class GameState {
       this.populationManager.update(deltaTime);
       this.buildingManager.update(deltaTime, {
         requirementManager: this.requirementManager,
-        planningManager: this.planningManager
+        planningManager: this.planningManager,
+        mapWidth: this.config.width,
+        mapHeight: this.config.height,
       });
       this.requirementManager.update(deltaTime);
       this.planningManager.update(deltaTime);
@@ -85,7 +89,7 @@ export class GameState {
     }
   }
 
-  handleTileClick(x: number, y: number) {
+  handleBlockClick(x: number, y: number) {
     console.log(`點擊格子座標: x=${x}, y=${y}, 地形類型=${this.blockManager.getBlock(x, y)?.terrainType}`);
   }
 } 

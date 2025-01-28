@@ -60,20 +60,12 @@ export default class BuildingManager {
     this.plannedBlocks.add(`${x},${y}`);
   }
 
-  update(deltaTime: number, context: { requirementManager: RequirementManager; planningManager: PlanningManager }) {
+  update(deltaTime: number, context: { requirementManager: RequirementManager; planningManager: PlanningManager; mapWidth: number; mapHeight: number }) {
     // 使用 context 來獲取其他管理器的狀態
     const requirements = context.requirementManager.getRequirements();
     const plannedBlocks = context.planningManager.getPlannedBlocks();
 
-    this.plannedBlocks.forEach(block => {
-      const [x, y] = block.split(',').map(Number);
-      if (!this.buildings.some(b => b.getPosition().x === x && b.getPosition().y === y)) {
-        // 根據需求生成建築
-        const buildingType = this.determineBuildingType(requirements); // 根據需求決定建築類型
-        const building = new Building({ type: buildingType, x, y, size: { width: 2, height: 2 } });
-        this.buildings.push(building);
-      }
-    });
+    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight);
 
     this.buildings.forEach(building => building.update());
   }
@@ -81,5 +73,27 @@ export default class BuildingManager {
   private determineBuildingType(requirements: { [key in BuildingType]: number }): BuildingType {
     // 根據需求決定建築類型的邏輯
     return BuildingType.RESIDENTIAL; // 這裡簡化為返回住宅區
+  }
+
+  generateRandomBuildings(numBuildings: number, mapWidth: number, mapHeight: number) {
+    for (let i = 0; i < numBuildings; i++) {
+      const width = Math.floor(Math.random() * 3) + 1; // 隨機寬度 1-3
+      const height = Math.floor(Math.random() * 3) + 1; // 隨機高度 1-3
+      const x = Math.floor(Math.random() * (mapWidth - width));
+      const y = Math.floor(Math.random() * (mapHeight - height));
+
+      // 檢查是否有重疊
+      const isOverlapping = this.buildings.some(building => {
+        const pos = building.getPosition();
+        const size = building.getSize();
+        return !(x + width <= pos.x || x >= pos.x + size.width || y + height <= pos.y || y >= pos.y + size.height);
+      });
+
+      if (!isOverlapping) {
+        const buildingType = this.determineBuildingType({}); // 根據需求決定建築類型
+        const building = new Building({ type: buildingType, x, y, size: { width, height } });
+        this.buildings.push(building);
+      }
+    }
   }
 }

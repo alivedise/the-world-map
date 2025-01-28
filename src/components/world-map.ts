@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { WorldSimulation } from '../services/world-simulation';
+import './map-building'; // 引入建築元件
 
 @customElement('world-map')
 export class WorldMap extends LitElement {
@@ -36,12 +37,14 @@ export class WorldMap extends LitElement {
     this.unsubscribe?.();
   }
 
-  private handleTileClick(x: number, y: number) {
-    this.simulation.handleTileClick(x, y);
+  private handleBlockClick(x: number, y: number) {
+    this.simulation.handleBlockClick(x, y);
   }
 
   render() {
     const blocks = this.simulation.gameState.blockManager.getAllBlocks();
+    const buildings = this.simulation.gameState.buildingManager.buildings; // 獲取建築物列表
+
     return html`
       <div>
         ${blocks.map(row => html`
@@ -51,6 +54,9 @@ export class WorldMap extends LitElement {
               return html`<div class="block" style="background-color: ${terrainColor};"></div>`;
             })}
           </div>
+        `)}
+        ${buildings.map(building => html`
+          <map-building .x=${building.getPosition().x} .y=${building.getPosition().y} .width=${building.getSize().width} .height=${building.getSize().height}></map-building>
         `)}
       </div>
     `;

@@ -1,6 +1,8 @@
 import './components/app';
 import './components/world-map';
-import './components/map-tile';
+import './components/map-block';
+import './components/map-building';
 import './components/fps-hud';
 import './components/game-control-hud'; 
 import './components/general-statistics-hud';
+import './components/building-hud';

@@ -27,6 +27,12 @@ export class MapGenerator {
     return map;
   }
 
+  /**
+   * Generates terrain features on the map
+   * @param map The 2D array representing the map
+   * @param terrainType The type of terrain to generate (0: grass, 1: sand, 2: water, 3: mountain)
+   * @param density The density of terrain features to generate (between 0 and 1)
+   */
   private generateTerrain(map: number[][], terrainType: number, density: number) {
     const numFeatures = Math.floor(this.width * this.height * density);
     

@@ -16,13 +16,14 @@ export class WorldSimulation {
   static getInstance(): WorldSimulation {
     if (!WorldSimulation.instance) {
       WorldSimulation.instance = new WorldSimulation();
+      window.wsi = WorldSimulation.instance;
     }
     return WorldSimulation.instance;
   }
 
   // 代理所有需要的 GameState 屬性
   get population() { return this.gameState.population; }
-  get mapData() { return this.gameState.mapData; }
+  get building() { return this.gameState.buildingManager.buildings.length; }
   get gameSpeed() { return this.gameState.gameSpeed; }
   get isPaused() { return this.gameState.isPaused; }
   get gameTime() { return this.gameState.gameTime; }
@@ -52,7 +53,11 @@ export class WorldSimulation {
     this.gameState.setPaused(isPaused);
   }
 
-  handleTileClick(x: number, y: number) {
-    this.gameState.handleTileClick(x, y);
+  handleBlockClick(x: number, y: number) {
+    this.gameState.handleBlockClick(x, y);
+  }
+
+  update(deltaTime: number) {
+    this.gameState.update(deltaTime);
   }
 } 

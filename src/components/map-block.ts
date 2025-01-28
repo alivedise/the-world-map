@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-@customElement('map-tile')
-export class MapTile extends LitElement {
+@customElement('map-block')
+export class MapBlock extends LitElement {
   @property({ type: Number })
   type: number = 0;
 
@@ -17,36 +17,20 @@ export class MapTile extends LitElement {
       display: block;
     }
 
-    .tile {
+    .block {
       width: 32px;
       height: 32px;
       transition: background-color 0.3s ease;
     }
 
-    .tile-0 { /* 草地 */
-      background-color: #7ec850;
-    }
-
-    .tile-1 { /* 沙地 */
-      background-color: #e6c587;
-    }
-
-    .tile-2 { /* 水域 */
-      background-color: #6b8cce;
-    }
-
-    .tile-3 { /* 山地 */
-      background-color: #8b7355;
-    }
-
-    .tile:hover {
+    .block:hover {
       filter: brightness(1.2);
       cursor: pointer;
     }
   `;
 
   private handleClick() {
-    this.dispatchEvent(new CustomEvent('tile-click', {
+    this.dispatchEvent(new CustomEvent('block-click', {
       detail: { x: this.x, y: this.y, type: this.type },
       bubbles: true,
       composed: true
@@ -56,7 +40,7 @@ export class MapTile extends LitElement {
   render() {
     return html`
       <div 
-        class="tile tile-${this.type}"
+        class="block block-${this.type}"
         @click=${this.handleClick}
         title="座標: ${this.x},${this.y}"
       ></div>
