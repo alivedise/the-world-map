@@ -75,7 +75,9 @@ export class GameState {
     if (!this._isPaused) {
       this._gameTime += deltaTime * this._gameSpeed;
 
-      this.populationManager.update(deltaTime);
+      this.populationManager.update(deltaTime, {
+        buildingManager: this.buildingManager,
+      });
       this.buildingManager.update(deltaTime, {
         requirementManager: this.requirementManager,
         planningManager: this.planningManager,

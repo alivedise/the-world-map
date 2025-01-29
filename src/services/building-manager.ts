@@ -19,12 +19,18 @@ export class Building {
   private position: { x: number; y: number };
   private size: Size;
   private lifecycle: 'under_construction' | 'normal' | 'abandoned';
+  public id: string;
   
   constructor(config: BuildingConfig) {
+    this.id = this.generateId(); // 生成唯一的 id
     this.type = config.type;
     this.position = { x: config.x, y: config.y };
     this.size = config.size;
     this.lifecycle = 'under_construction';
+  }
+
+  private generateId(): string {
+    return `building-${Math.random().toString(36).substr(2, 9)}`; // 生成唯一 id
   }
 
   getColor(): string {

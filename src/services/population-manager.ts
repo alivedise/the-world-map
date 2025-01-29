@@ -1,5 +1,9 @@
+import Citizen from "../models/Citizen";
+import BuildingManager from "../services/building-manager";
 
 export default class PopulationManager {
+  private citizens: Citizen[] = [];
+
   private population: number;
   private currentTime: number;
   constructor() {
@@ -7,13 +11,45 @@ export default class PopulationManager {
     this.currentTime = 0;
   }
 
-  update(deltaTime: number) {
+
+  addCitizen(citizen: Citizen) {
+    this.citizens.push(citizen);
+  }
+
+  removeCitizen(name: string) {
+    this.citizens = this.citizens.filter(citizen => citizen.name !== name);
+  }
+
+  getCitizens(): Citizen[] {
+    return this.citizens;
+  }
+
+  getCitizenByName(name: string): Citizen | undefined {
+    return this.citizens.find(citizen => citizen.name === name);
+  }
+
+  update(deltaTime: number, context: { buildingManager: BuildingManager }) {
     // decide to increase or decrease population
     // update population
+    const buildings = context.buildingManager.buildings;
     this.currentTime += deltaTime;
-    if (this.currentTime > 10) {
+    if (this.currentTime > 3) {
       this.population += 1;
       this.currentTime = 0;
+
+      // 创建新的 Citizen 实例并添加到 citizens 数组中
+      const newCitizen = new Citizen(
+        Math.random() > 0.5 ? 'Male' : 'Female', // 随机性别
+        '', // liveAt 需要根据实际情况设置
+        '', // workAt 需要根据实际情况设置
+        'Car', // 假设交通工具为 Car
+        'Unemployed', // 假设初始职业为 Unemployed
+        'Happy', // 假设初始心情为 Happy
+        Math.floor(Math.random() * 100), // 随机年龄
+        { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) } // 随机位置
+      );
+      this.addCitizen(newCitizen);
+      this.citizens.forEach((citizen) => citizen.update(buildings));
     }
   }
 

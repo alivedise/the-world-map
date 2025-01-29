@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { WorldSimulation } from '../services/world-simulation';
 import './map-building'; // 引入建築元件
+import './map-citizen'; // 引入公民元件
 
 @customElement('world-map')
 export class WorldMap extends LitElement {
@@ -44,6 +45,7 @@ export class WorldMap extends LitElement {
   render() {
     const blocks = this.simulation.gameState.blockManager.getAllBlocks();
     const buildings = this.simulation.gameState.buildingManager.buildings; // 獲取建築物列表
+    const citizens = this.simulation.gameState.populationManager.getCitizens(); // 獲取公民列表
 
     return html`
       <div>
@@ -63,6 +65,14 @@ export class WorldMap extends LitElement {
             .height=${building.getSize().height} 
             .color=${building.getColor()}>
           </map-building>
+        `)}
+        ${citizens.map(citizen => html`
+          <map-citizen 
+            .x=${citizen.location.x} 
+            .y=${citizen.location.y} 
+            .name=${citizen.name}
+            .color=${citizen.color}>
+          </map-citizen>
         `)}
       </div>
     `;

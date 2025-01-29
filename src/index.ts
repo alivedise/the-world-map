@@ -6,3 +6,4 @@ import './components/fps-hud';
 import './components/game-control-hud'; 
 import './components/general-statistics-hud';
 import './components/building-hud';
+import './components/map-citizen';
