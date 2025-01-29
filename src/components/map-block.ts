@@ -30,6 +30,7 @@ export class MapBlock extends LitElement {
   `;
 
   private handleClick() {
+    console.log(this);
     this.dispatchEvent(new CustomEvent('block-click', {
       detail: { x: this.x, y: this.y, type: this.type },
       bubbles: true,

@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import Job from './Job';
+import { Action } from './Action';
 
 export default class Citizen {
   id: string; // 新增 id 屬性
@@ -16,7 +17,9 @@ export default class Citizen {
   accumulatedTime: number = 0; // 新增累積時間屬性
   speed: number = 1; // 新增速度屬性
   color: string; // 新增顏色屬性
-  job: Job;
+  job: Job | null;
+  private currentAction: Action | null = null;
+  private actionTicks: number = 0; // 記錄行動的執行時間
 
   constructor(
     gender: string,
@@ -61,39 +64,56 @@ export default class Citizen {
   }
 
   update(buildings: Building[]) {
-    // 如果已經有目標建築，則直接繼續移動
-    if (this.targetAt) {
-        const destinationBuilding = buildings.find(building => building.id === this.targetAt);
-        if (destinationBuilding) {
-            const destinationPosition = destinationBuilding.getPosition();
-            const path = this.calculatePath(destinationPosition);
-
-            // 更新位置
-            if (path.length > 0) {
-                // 每次只移動一個像素
-                this.location.x = Math.min(this.location.x + (this.location.x < destinationPosition.x ? 2/32 : -2/32), destinationPosition.x);
-                this.location.y = Math.min(this.location.y + (this.location.y < destinationPosition.y ? 2/32 : -2/32), destinationPosition.y);
-
-                // 檢查是否到達目的地
-                if (this.location.x === destinationPosition.x && this.location.y === destinationPosition.y) {
-                    this.targetAt = ''; // 清除目標
-                }
-            }
-        }
+    // 如果有當前行動，則執行行動邏輯
+    if (this.currentAction) {
+      this.executeCurrentAction();
     } else {
-        // 隨機決定是否移動
-        const shouldMove = Math.random() > 0.5; // 50% 機率決定是否移動
-        if (shouldMove) {
-            // 隨機選擇一個建築作為目的地
-            const destinationBuilding = buildings[Math.floor(Math.random() * buildings.length)];
-            this.targetAt = destinationBuilding.id;
-            console.log(destinationBuilding);
-        }
+      // 如果沒有當前行動，則決定下一個行動
+      this.decideNextAction(buildings);
+    }
+  }
+
+  private executeCurrentAction() {
+    this.actionTicks++;
+
+    // 檢查行動是否完成
+    if (this.actionTicks >= this.currentAction.duration) {
+      this.currentAction = null; // 行動完成
+      this.actionTicks = 0; // 重置計數器
+    }
+  }
+
+  private decideNextAction(buildings: Building[]) {
+    // 這裡可以根據不同的邏輯決定下一個行動
+    const actionType = this.randomActionType(); // 隨機選擇行動類型
+    let duration = this.calculateActionDuration(actionType); // 計算行動所需的時長
+
+    // 根據行動類型創建行動實例
+    this.currentAction = new Action(actionType, duration);
+  }
+
+  private randomActionType(): ActionType {
+    const actionTypes: ActionType[] = ['rest', 'move', 'work'];
+    return actionTypes[Math.floor(Math.random() * actionTypes.length)];
+  }
+
+  private calculateActionDuration(actionType: ActionType): number {
+    // 根據行動類型計算所需的時長
+    switch (actionType) {
+      case 'rest':
+        return Math.floor(Math.random() * 5) + 1; // 隨機休息1到5個tick
+      case 'move':
+        return 0; // 移動行動不需要固定時長
+      case 'work':
+        return Math.floor(Math.random() * 10) + 1; // 隨機工作1到10個tick
+      default:
+        return 1; // 默認時長
     }
   }
 
   quitJob() {
     this.workAt = '';
+    this.job = null;
   }
 
   public startWorkAt(job: Job) {

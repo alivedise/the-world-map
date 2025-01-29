@@ -11,6 +11,7 @@ export class GameApp extends LitElement {
     this.simulation.subscribe(() => {
       this.requestUpdate();
     });
+    // window.addEventListener('click', (evt) => { console.log(evt); }, true)
   }
 
   static styles = css`

@@ -30,6 +30,16 @@ export class WorldMap extends LitElement {
       this.requestUpdate();
     });
     this.simulation.start();
+
+    this.addEventListener('block-click', (event) => {
+      const { x, y, type } = event.detail;
+      console.log(`Block clicked at: x=${x}, y=${y}, type=${type}`);
+    });
+
+    this.addEventListener('citizen-click', (event) => {
+      const { x, y, name } = event.detail;
+      console.log(`Citizen clicked: ${name} at x=${x}, y=${y}`);
+    });
   }
 
   disconnectedCallback() {

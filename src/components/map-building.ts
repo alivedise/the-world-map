@@ -22,24 +22,29 @@ export class MapBuilding extends LitElement {
   color: string = '#000'; // 默認顏色
 
   static styles = css`
-    :host {
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
     .building {
       position: absolute;
       border: 1px solid #000;
     }
+    .building:hover {
+      border-color: #0186d3;
+    }
   `;
+
+  private handleClick() {
+    console.log(this);
+    this.dispatchEvent(new CustomEvent('building-click', {
+      detail: { x: this.x, y: this.y, name: this.name },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
   render() {
     return html`
       <div
         class="building"
+        @click="${this.handleClick}"
         style="width: ${this.width * 32}px; height: ${this.height * 32}px; left: ${this.x * 32}px; top: ${this.y * 32}px; background-color: ${this.color};"
       >
         ${this.name}

@@ -16,9 +16,7 @@ export class MapCitizen extends LitElement {
   color: string = 'blue';
 
   static styles = css`
-    :host {
-      display: block;
-      position: absolute;
+    .citizen {
       width: 5px;
       height: 5px;
       border-radius: 50%; /* 圆形 */
@@ -27,15 +25,28 @@ export class MapCitizen extends LitElement {
       line-height: 5px; /* 垂直居中 */
       top: 0;
       left: 0;
-    }
-    .citizen {
       position: absolute;
+    }
+    .citizen:hover {
+      border-color: red;
     }
   `;
 
+  private handleClick() {
+    this.dispatchEvent(new CustomEvent('citizen-click', {
+      detail: { x: this.x, y: this.y, name: this.name },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
   render() {
     return html`
-      <div class="citizen" style="left: ${this.x * 32}px; top: ${this.y * 32}px; background-color: ${this.color};">
+      <div
+        class="citizen"
+        @click="${this.handleClick}"
+        style="left: ${this.x * 32}px; top: ${this.y * 32}px;
+        background-color: ${this.color};">
         ${this.name}
       </div>
     `;
