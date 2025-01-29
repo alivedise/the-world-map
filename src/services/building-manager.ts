@@ -1,6 +1,8 @@
 import { BuildingType, buildingTypeParams } from './building-type';
 import RequirementManager from './requirement-manager';
 import PlanningManager from './planning-manager';
+import JobManager from './job-manager';
+import Building from './building'; // 導入 Building 類別
 
 export interface BuildingConfig {
   type: BuildingType;
@@ -14,54 +16,6 @@ export interface Size {
   height: number;
 }
 
-export class Building {
-  private type: BuildingType;
-  private position: { x: number; y: number };
-  private size: Size;
-  private lifecycle: 'under_construction' | 'normal' | 'abandoned';
-  public id: string;
-  
-  constructor(config: BuildingConfig) {
-    this.id = this.generateId(); // 生成唯一的 id
-    this.type = config.type;
-    this.position = { x: config.x, y: config.y };
-    this.size = config.size;
-    this.lifecycle = 'under_construction';
-  }
-
-  private generateId(): string {
-    return `building-${Math.random().toString(36).substr(2, 9)}`; // 生成唯一 id
-  }
-
-  getColor(): string {
-    return buildingTypeParams[this.type].color;
-  }
-
-  update() {
-    // 更新建築物的狀態
-    if (this.lifecycle === 'under_construction') {
-      // 假設施工時間為5秒
-      this.lifecycle = 'normal'; // 假設施工完成
-    }
-  }
-
-  getType(): BuildingType {
-    return this.type;
-  }
-
-  getPosition(): { x: number; y: number } {
-    return this.position;
-  }
-
-  getSize(): Size {
-    return this.size;
-  }
-
-  getLifecycle(): string {
-    return this.lifecycle;
-  }
-}
-
 export default class BuildingManager {
   private buildings: Building[] = [];
   private plannedBlocks: Set<string> = new Set(); // 儲存已規劃的區塊
@@ -70,12 +24,18 @@ export default class BuildingManager {
     this.plannedBlocks.add(`${x},${y}`);
   }
 
-  update(deltaTime: number, context: { requirementManager: RequirementManager; planningManager: PlanningManager; mapWidth: number; mapHeight: number }) {
+  update(deltaTime: number, context: {
+    requirementManager: RequirementManager;
+    planningManager: PlanningManager;
+    mapWidth: number;
+    mapHeight: number;
+    jobManager: JobManager;
+  }) {
     // 使用 context 來獲取其他管理器的狀態
     const requirements = context.requirementManager.getRequirements();
     const plannedBlocks = context.planningManager.getPlannedBlocks();
 
-    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight, requirements);
+    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight, requirements, context.jobManager);
 
     this.buildings.forEach(building => building.update());
   }
@@ -106,7 +66,8 @@ export default class BuildingManager {
     numBuildings: number, 
     mapWidth: number, 
     mapHeight: number, 
-    requirements: { [key in BuildingType]: number }
+    requirements: { [key in BuildingType]: number },
+    jobManager: JobManager,
   ) {
     for (let i = 0; i < numBuildings; i++) {
       const width = Math.floor(Math.random() * 3) + 1; // 隨機寬度 1-3
@@ -124,8 +85,15 @@ export default class BuildingManager {
       if (!isOverlapping) {
         const buildingType = this.determineBuildingType(requirements); // 根據需求決定建築類型
         const building = new Building({ type: buildingType, x, y, size: { width, height } });
+        jobManager.generateJobs(building);
         this.buildings.push(building);
       }
     }
+  }
+
+  getRandomResidentialBuilding(): Building | undefined {
+    const residentialBuildings = this.buildings.filter(building => building.getType() === BuildingType.RESIDENTIAL);
+    if (residentialBuildings.length === 0) return undefined;
+    return residentialBuildings[Math.floor(Math.random() * residentialBuildings.length)];
   }
 }

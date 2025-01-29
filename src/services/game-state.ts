@@ -4,6 +4,7 @@ import BuildingManager from './building-manager';
 import RequirementManager from './requirement-manager';
 import PlanningManager from './planning-manager';
 import BlockManager from './BlockManager';
+import JobManager from './job-manager';
 
 export interface GameStateConfig {
   width: number;
@@ -21,6 +22,7 @@ export class GameState {
   private planningManager: PlanningManager;
   private requirementManager: RequirementManager;
   private blockManager: BlockManager;
+  private jobManager: JobManager;
   private config: GameStateConfig;
 
   constructor(config: GameStateConfig) {
@@ -30,6 +32,7 @@ export class GameState {
     this.buildingManager = new BuildingManager();
     this.planningManager = new PlanningManager();
     this.requirementManager = new RequirementManager();
+    this.jobManager = new JobManager();
     this.blockManager = new BlockManager(config.width, config.height);
   }
 
@@ -71,24 +74,27 @@ export class GameState {
     }
   }
 
+  gameContext() {
+    return {
+      populationManager: this.populationManager,
+      buildingManager: this.buildingManager,
+      requirementManager: this.requirementManager,
+      planningManager: this.planningManager,
+      jobManager: this.jobManager,
+      blockManager: this.blockManager,
+      mapWidth: this.config.width,
+      mapHeight: this.config.height,
+    };
+  }
+
   update(deltaTime: number) {
     if (!this._isPaused) {
       this._gameTime += deltaTime * this._gameSpeed;
 
-      this.populationManager.update(deltaTime, {
-        buildingManager: this.buildingManager,
-      });
-      this.buildingManager.update(deltaTime, {
-        requirementManager: this.requirementManager,
-        planningManager: this.planningManager,
-        mapWidth: this.config.width,
-        mapHeight: this.config.height,
-      });
-      this.requirementManager.update(deltaTime, {
-        buildingManager: this.buildingManager,
-        populationManager: this.populationManager,
-        planningManager: this.planningManager,
-      });
+      const context = this.gameContext();
+      this.populationManager.update(deltaTime, context);
+      this.buildingManager.update(deltaTime, context);
+      this.requirementManager.update(deltaTime, context);
       this.planningManager.update(deltaTime);
       this.blockManager.update(deltaTime);
       this.notifySubscribers();

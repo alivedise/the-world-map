@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import Job from './Job';
 
 export default class Citizen {
   id: string; // 新增 id 屬性
@@ -15,6 +16,7 @@ export default class Citizen {
   accumulatedTime: number = 0; // 新增累積時間屬性
   speed: number = 1; // 新增速度屬性
   color: string; // 新增顏色屬性
+  job: Job;
 
   constructor(
     gender: string,
@@ -24,7 +26,7 @@ export default class Citizen {
     occupation: string,
     mood: string,
     age: number,
-    location: { x: number; y: number } // 確保這裡是正確的對象
+    location: { x: number; y: number }, // 確保這裡是正確的對象
   ) {
     this.id = this.generateId(); // 生成唯一的 id
     this.name = faker.person.fullName(); // 使用 faker 生成名字
@@ -32,7 +34,7 @@ export default class Citizen {
     this.liveAt = liveAt;
     this.workAt = workAt;
     this.transportation = transportation;
-    this.occupation = occupation;
+    this.occupation = occupation; // 設置職業
     this.mood = mood;
     this.age = age;
     this.location = { x: location.x, y: location.y }; // 確保這裡是正確的對象
@@ -90,6 +92,15 @@ export default class Citizen {
     }
   }
 
+  quitJob() {
+    this.workAt = '';
+  }
+
+  public startWorkAt(job: Job) {
+    this.job = job;
+    this.job.apply(this);
+  }
+
   private calculatePath(destination: { x: number; y: number }): { x: number; y: number }[] {
     const path = [];
     const stepSize = 1; // 每次移動的步長改為1像素
@@ -100,25 +111,25 @@ export default class Citizen {
 
     // 確保起始位置和目標位置都是有效的
     if (destination.x < 0 || destination.y < 0) {
-        return path; // 返回空路徑
+      return path; // 返回空路徑
     }
 
     // 簡單的邊緣移動邏輯
     while ((startX !== destination.x || startY !== destination.y) && iterations < maxIterations) {
-        if (startX < destination.x) {
-            startX += stepSize;
-        } else if (startX > destination.x) {
-            startX -= stepSize;
-        }
+      if (startX < destination.x) {
+          startX += stepSize;
+      } else if (startX > destination.x) {
+          startX -= stepSize;
+      }
 
-        if (startY < destination.y) {
-            startY += stepSize;
-        } else if (startY > destination.y) {
-            startY -= stepSize;
-        }
+      if (startY < destination.y) {
+          startY += stepSize;
+      } else if (startY > destination.y) {
+          startY -= stepSize;
+      }
 
-        path.push({ x: startX, y: startY });
-        iterations++;
+      path.push({ x: startX, y: startY });
+      iterations++;
     }
 
     return path;
