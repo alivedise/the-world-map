@@ -1,6 +1,8 @@
 import { faker } from '@faker-js/faker';
 import Job from './Job';
 import { Action } from './Action';
+import RoadManager from '../services/RoadManager';
+import BuildingManager from '../services/building-manager';
 
 export default class Citizen {
   id: string; // 新增 id 屬性
@@ -18,8 +20,10 @@ export default class Citizen {
   speed: number = 1; // 新增速度屬性
   color: string; // 新增顏色屬性
   job: Job | null;
+  path: { x: number; y: number }[] | null;
   private currentAction: Action | null = null;
   private actionTicks: number = 0; // 記錄行動的執行時間
+  private currentStep: number = 0; // 新增當前步驟屬性
 
   constructor(
     gender: string,
@@ -59,18 +63,20 @@ export default class Citizen {
     return `rgb(${r % 256}, ${g % 256}, ${b % 256})`; // 生成 RGB 顏色
   }
 
-  continueMoving() {
-    
-  }
-
-  update(buildings: Building[]) {
+  update(context: {
+    buildingManager: BuildingManager,
+    roadManager: RoadManager,
+  }) {
     // 如果有當前行動，則執行行動邏輯
     if (this.currentAction) {
       this.executeCurrentAction();
     } else {
       // 如果沒有當前行動，則決定下一個行動
-      this.decideNextAction(buildings);
+      this.decideNextAction(context);
     }
+
+    // 更新市民位置
+    this.updatePosition();
   }
 
   private executeCurrentAction() {
@@ -83,13 +89,47 @@ export default class Citizen {
     }
   }
 
-  private decideNextAction(buildings: Building[]) {
-    // 這裡可以根據不同的邏輯決定下一個行動
-    const actionType = this.randomActionType(); // 隨機選擇行動類型
+  private decideNextAction(context: {
+    buildingManager: BuildingManager,
+    roadManager: RoadManager,
+  }) {
+    const buildings = context.buildingManager.getBuildings()
+    const actionType = 'move'; //this.randomActionType(); // 隨機選擇行動類型
     let duration = this.calculateActionDuration(actionType); // 計算行動所需的時長
 
     // 根據行動類型創建行動實例
     this.currentAction = new Action(actionType, duration);
+    
+    if (actionType === 'move') {
+      // 確保有工作地點
+      if (this.workAt) {
+        const destination = { x: 0, y: 0 }; // 假設這裡是目標建築的座標
+        const building = buildings.find(b => b.id === this.workAt);
+        if (building) {
+          destination.x = building.getPosition().x;
+          destination.y = building.getPosition().y;
+          
+          // 使用 roadManager 找出移動路徑
+          const path = context.roadManager.findPath(this.location, destination);
+          if (path) {
+          } else {
+            console.log("無法找到路徑");
+          }
+        }
+      } else {
+        // 隨機選擇一個建築物作為目的地
+        const randomBuilding = buildings[Math.floor(Math.random() * buildings.length)];
+        const destination = randomBuilding.getPosition();
+
+        // 使用 roadManager 找出移動路徑
+        const path = context.roadManager.findPath(this.location, destination);
+        if (path) {
+          this.moveTo(path); // 移動到隨機選擇的建築
+        } else {
+          console.log("無法找到路徑");
+        }
+      }
+    }
   }
 
   private randomActionType(): ActionType {
@@ -121,37 +161,45 @@ export default class Citizen {
     this.job.apply(this);
   }
 
-  private calculatePath(destination: { x: number; y: number }): { x: number; y: number }[] {
-    const path = [];
-    const stepSize = 1; // 每次移動的步長改為1像素
-    let startX = this.location.x;
-    let startY = this.location.y;
-    const maxIterations = 100; // 最大迭代次數
-    let iterations = 0;
-
-    // 確保起始位置和目標位置都是有效的
-    if (destination.x < 0 || destination.y < 0) {
-      return path; // 返回空路徑
+  public moveTo(path: { x: number, y: number }[]) {
+    if (!path || path.length === 0) {
+        console.log("無法找到路徑");
+        return;
     }
+    
+    // 將路徑展開為 32 個步驟
+    this.path = this.expandPath(path, 32);
+    this.currentStep = 0; // 初始化當前步驟
+  }
 
-    // 簡單的邊緣移動邏輯
-    while ((startX !== destination.x || startY !== destination.y) && iterations < maxIterations) {
-      if (startX < destination.x) {
-          startX += stepSize;
-      } else if (startX > destination.x) {
-          startX -= stepSize;
-      }
-
-      if (startY < destination.y) {
-          startY += stepSize;
-      } else if (startY > destination.y) {
-          startY -= stepSize;
-      }
-
-      path.push({ x: startX, y: startY });
-      iterations++;
+  private expandPath(path: { x: number, y: number }[], steps: number): { x: number, y: number }[] {
+    const expandedPath: { x: number, y: number }[] = [];
+    
+    for (let i = 0; i < path.length - 1; i++) {
+        const start = path[i];
+        const end = path[i + 1];
+        
+        for (let j = 0; j < steps; j++) {
+            const x = start.x + (end.x - start.x) * (j / steps);
+            const y = start.y + (end.y - start.y) * (j / steps);
+            expandedPath.push({ x, y });
+        }
     }
+    
+    return expandedPath;
+  }
 
-    return path;
+  private updatePosition() {
+    if (this.path && this.currentStep < this.path.length) {
+        // 更新市民位置，將座標轉換為整數
+        this.location = {
+            x: (this.path[this.currentStep].x),
+            y: (this.path[this.currentStep].y)
+        };
+        console.log(`市民${this.name}移動到: (${this.location.x}, ${this.location.y})`); // 直接使用格子座標
+        this.currentStep++; // 增加步驟
+    } else {
+        this.path = null; // 移動完成，清空路徑
+    }
   }
 }

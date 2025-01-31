@@ -58,8 +58,8 @@ export default class PopulationManager {
       }
 
       this.addCitizen(newCitizen);
-      this.citizens.forEach((citizen) => citizen.update(buildings));
     }
+    this.citizens.forEach((citizen) => citizen.update(context));
   }
 
   getPopulation() {

@@ -5,6 +5,7 @@ import RequirementManager from './requirement-manager';
 import PlanningManager from './planning-manager';
 import BlockManager from './BlockManager';
 import JobManager from './job-manager';
+import RoadManager from './RoadManager';
 
 export interface GameStateConfig {
   width: number;
@@ -23,6 +24,7 @@ export class GameState {
   private requirementManager: RequirementManager;
   private blockManager: BlockManager;
   private jobManager: JobManager;
+  private roadManager: RoadManager;
   private config: GameStateConfig;
 
   constructor(config: GameStateConfig) {
@@ -34,6 +36,7 @@ export class GameState {
     this.requirementManager = new RequirementManager();
     this.jobManager = new JobManager();
     this.blockManager = new BlockManager(config.width, config.height);
+    this.roadManager = new RoadManager();
   }
 
   initialize() {
@@ -82,6 +85,7 @@ export class GameState {
       planningManager: this.planningManager,
       jobManager: this.jobManager,
       blockManager: this.blockManager,
+      roadManager: this.roadManager,
       mapWidth: this.config.width,
       mapHeight: this.config.height,
     };
@@ -97,6 +101,7 @@ export class GameState {
       this.requirementManager.update(deltaTime, context);
       this.planningManager.update(deltaTime);
       this.blockManager.update(deltaTime);
+      this.roadManager.update(context);
       this.notifySubscribers();
     }
   }
