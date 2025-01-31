@@ -21,6 +21,7 @@ export default class Citizen {
   color: string; // 新增顏色屬性
   job: Job | null;
   path: { x: number; y: number }[] | null;
+  destination: { x: number, y: number };
   private currentAction: Action | null = null;
   private actionTicks: number = 0; // 記錄行動的執行時間
   private currentStep: number = 0; // 新增當前步驟屬性
@@ -67,7 +68,6 @@ export default class Citizen {
     buildingManager: BuildingManager,
     roadManager: RoadManager,
   }) {
-    // 如果有當前行動，則執行行動邏輯
     if (this.currentAction) {
       this.executeCurrentAction();
     } else {
@@ -94,12 +94,12 @@ export default class Citizen {
     roadManager: RoadManager,
   }) {
     const buildings = context.buildingManager.getBuildings()
-    const actionType = 'move'; //this.randomActionType(); // 隨機選擇行動類型
+    const actionType = this.randomActionType(); // 隨機選擇行動類型
     let duration = this.calculateActionDuration(actionType); // 計算行動所需的時長
 
     // 根據行動類型創建行動實例
     this.currentAction = new Action(actionType, duration);
-    
+    console.log(`${this.name} next action: ${actionType}`);
     if (actionType === 'move') {
       // 確保有工作地點
       if (this.workAt) {
@@ -110,10 +110,16 @@ export default class Citizen {
           destination.y = building.getPosition().y;
           
           // 使用 roadManager 找出移動路徑
-          const path = context.roadManager.findPath(this.location, destination);
+          // XXX: workaround float x,y issue after moving
+          const path = context.roadManager.findPath({
+            x: Math.round(this.location.x),
+            y: Math.round(this.location.y),
+          }, destination);
           if (path) {
+            this.targetAt = this.workAt
+            this.moveTo(path); // 移動到隨機選擇的建築
           } else {
-            console.log("無法找到路徑");
+            console.log("無法找到路徑:", this.location, destination);
           }
         }
       } else {
@@ -122,11 +128,15 @@ export default class Citizen {
         const destination = randomBuilding.getPosition();
 
         // 使用 roadManager 找出移動路徑
-        const path = context.roadManager.findPath(this.location, destination);
+        const path = context.roadManager.findPath({
+          x: Math.round(this.location.x),
+          y: Math.round(this.location.y),
+        }, destination);
         if (path) {
+          this.targetAt = randomBuilding.id;
           this.moveTo(path); // 移動到隨機選擇的建築
         } else {
-          console.log("無法找到路徑");
+          console.log("無法找到路徑:", this.location, destination);
         }
       }
     }
@@ -141,11 +151,11 @@ export default class Citizen {
     // 根據行動類型計算所需的時長
     switch (actionType) {
       case 'rest':
-        return Math.floor(Math.random() * 5) + 1; // 隨機休息1到5個tick
+        return Math.floor(Math.random() * 5) + 20; // 隨機休息2到6個tick
       case 'move':
         return 0; // 移動行動不需要固定時長
       case 'work':
-        return Math.floor(Math.random() * 10) + 1; // 隨機工作1到10個tick
+        return Math.floor(Math.random() * 10) + 20; // 隨機工作2到11個tick
       default:
         return 1; // 默認時長
     }
@@ -191,15 +201,15 @@ export default class Citizen {
 
   private updatePosition() {
     if (this.path && this.currentStep < this.path.length) {
-        // 更新市民位置，將座標轉換為整數
-        this.location = {
-            x: (this.path[this.currentStep].x),
-            y: (this.path[this.currentStep].y)
-        };
-        console.log(`市民${this.name}移動到: (${this.location.x}, ${this.location.y})`); // 直接使用格子座標
-        this.currentStep++; // 增加步驟
+      // 更新市民位置
+      this.location = {
+        x: (this.path[this.currentStep].x),
+        y: (this.path[this.currentStep].y)
+      };
+      //console.log(`市民${this.name}移動到: (${this.location.x}, ${this.location.y})`); // 直接使用格子座標
+      this.currentStep++; // 增加步驟
     } else {
-        this.path = null; // 移動完成，清空路徑
+      this.path = null; // 移動完成，清空路徑
     }
   }
 }
