@@ -24,6 +24,10 @@ export default class BuildingManager {
     this.plannedBlocks.add(`${x},${y}`);
   }
 
+  getBuildings(): Building[]{
+    return this.buildings;
+  }
+
   update(deltaTime: number, context: {
     requirementManager: RequirementManager;
     planningManager: PlanningManager;
