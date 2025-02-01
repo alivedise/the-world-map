@@ -32,7 +32,7 @@ export default class PopulationManager {
   update(deltaTime: number, context: { buildingManager: BuildingManager; jobManager: JobManager }) {
     const buildings = context.buildingManager.buildings;
     this.currentTime += deltaTime;
-    if (this.currentTime > 3) {
+    if (this.currentTime > 1) {
       this.population += 1;
       this.currentTime = 0;
 
