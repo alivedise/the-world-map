@@ -46,8 +46,10 @@ export class MapCitizen extends LitElement {
         class="citizen"
         @click="${this.handleClick}"
         style="left: ${this.x * 32}px; top: ${this.y * 32}px;
-        background-color: ${this.color};">
-        ${this.name}
+        background-color: ${this.color};"
+        alt="${this.name}"
+        >
+        👤
       </div>
     `;
   }

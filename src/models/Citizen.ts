@@ -85,7 +85,7 @@ export default class Citizen {
     const result = this.currentAction.update();
     
     if (result.subActionName) {
-      console.log(`${this.name} 正在${result.subActionName}`);
+      // console.log(`${this.name} 正在${result.subActionName}`);
       if (result.mood) {
         this.updateMood(result.mood);
       }
@@ -115,7 +115,7 @@ export default class Citizen {
 
     // 根據行動類型創建行動實例
     this.currentAction = new Action(actionType, duration);
-    console.log(`${this.name} next action: ${actionType}`);
+    // console.log(`${this.name} next action: ${actionType}`);
     if (actionType === 'move') {
       // 確保有工作地點
       if (this.workAt) {
@@ -135,7 +135,7 @@ export default class Citizen {
             this.targetAt = this.workAt
             this.moveTo(path); // 移動到隨機選擇的建築
           } else {
-            console.log("無法找到路徑:", this.location, destination);
+            // console.log("無法找到路徑:", this.location, destination);
           }
         }
       } else {
@@ -152,7 +152,7 @@ export default class Citizen {
           this.targetAt = randomBuilding.id;
           this.moveTo(path); // 移動到隨機選擇的建築
         } else {
-          console.log("無法找到路徑:", this.location, destination);
+          // console.log("無法找到路徑:", this.location, destination);
         }
       }
     }
@@ -189,7 +189,7 @@ export default class Citizen {
 
   public moveTo(path: { x: number, y: number }[]) {
     if (!path || path.length === 0) {
-        console.log("無法找到路徑");
+        // console.log("無法找到路徑");
         return;
     }
     

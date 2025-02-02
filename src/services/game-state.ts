@@ -6,6 +6,9 @@ import PlanningManager from './planning-manager';
 import BlockManager from './BlockManager';
 import JobManager from './job-manager';
 import RoadManager from './RoadManager';
+import VehicleManager from './VehicleManager';
+import CompanyManager from './company-manager';
+import RecipeManager from './recipe-manager';
 
 export interface GameStateConfig {
   width: number;
@@ -26,7 +29,9 @@ export class GameState {
   private jobManager: JobManager;
   private roadManager: RoadManager;
   private config: GameStateConfig;
-
+  private vehicleManager: VehicleManager;
+  private companyManager: CompanyManager;
+  private recipeManager: RecipeManager;
   constructor(config: GameStateConfig) {
     this.config = config;
     this.mapGenerator = new MapGenerator(config.width, config.height);
@@ -37,6 +42,9 @@ export class GameState {
     this.jobManager = new JobManager();
     this.blockManager = new BlockManager(config.width, config.height);
     this.roadManager = new RoadManager();
+    this.vehicleManager = new VehicleManager();
+    this.companyManager = new CompanyManager();
+    this.recipeManager = new RecipeManager();
   }
 
   initialize() {
@@ -88,6 +96,9 @@ export class GameState {
       roadManager: this.roadManager,
       mapWidth: this.config.width,
       mapHeight: this.config.height,
+      vehicleManager: this.vehicleManager,
+      companyManager: this.companyManager,
+      recipeManager: this.recipeManager,
     };
   }
 
@@ -102,6 +113,8 @@ export class GameState {
       this.planningManager.update(deltaTime);
       this.blockManager.update(deltaTime);
       this.roadManager.update(context);
+      this.vehicleManager.update(context);
+      this.companyManager.update(deltaTime, context);
       this.notifySubscribers();
     }
   }

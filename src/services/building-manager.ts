@@ -3,7 +3,8 @@ import RequirementManager from './requirement-manager';
 import PlanningManager from './planning-manager';
 import JobManager from './job-manager';
 import Building from './building'; // 導入 Building 類別
-
+import VehicleManager from './vehicle-manager';
+import CompanyManager from './company-manager';
 export interface BuildingConfig {
   type: BuildingType;
   x: number;
@@ -34,12 +35,21 @@ export default class BuildingManager {
     mapWidth: number;
     mapHeight: number;
     jobManager: JobManager;
+    vehicleManager: VehicleManager;
+    companyManager: CompanyManager;
   }) {
-    // 使用 context 來獲取其他管理器的狀態
     const requirements = context.requirementManager.getRequirements();
     const plannedBlocks = context.planningManager.getPlannedBlocks();
 
-    this.generateRandomBuildings(1, context.mapWidth, context.mapHeight, requirements, context.jobManager);
+    this.generateRandomBuildings(
+      1, 
+      context.mapWidth, 
+      context.mapHeight, 
+      requirements, 
+      context.jobManager,
+      context.vehicleManager,
+      context.companyManager
+    );
 
     this.buildings.forEach(building => building.update());
   }
@@ -72,14 +82,15 @@ export default class BuildingManager {
     mapHeight: number, 
     requirements: { [key in BuildingType]: number },
     jobManager: JobManager,
+    vehicleManager: VehicleManager,
+    companyManager: CompanyManager,
   ) {
     for (let i = 0; i < numBuildings; i++) {
-      const width = Math.floor(Math.random() * 3) + 1; // 隨機寬度 1-3
-      const height = Math.floor(Math.random() * 3) + 1; // 隨機高度 1-3
+      const width = Math.floor(Math.random() * 3) + 1;
+      const height = Math.floor(Math.random() * 3) + 1;
       const x = Math.floor(Math.random() * (mapWidth - width));
       const y = Math.floor(Math.random() * (mapHeight - height));
 
-      // 檢查是否有重疊
       const isOverlapping = this.buildings.some(building => {
         const pos = building.getPosition();
         const size = building.getSize();
@@ -87,8 +98,15 @@ export default class BuildingManager {
       });
 
       if (!isOverlapping) {
-        const buildingType = this.determineBuildingType(requirements); // 根據需求決定建築類型
+        const buildingType = this.determineBuildingType(requirements);
         const building = new Building({ type: buildingType, x, y, size: { width, height } });
+        
+        // 為非住宅建築生成車輛
+        if (buildingType !== BuildingType.RESIDENTIAL) {
+          companyManager.introduceCompany(building);
+          vehicleManager.addCompanyVehicles(building.id, { x, y });
+        }
+        
         jobManager.generateJobs(building);
         this.buildings.push(building);
       }

@@ -48,6 +48,7 @@ export class GameApp extends LitElement {
         .simulation=${this.simulation}
       ></general-statistics-hud>
       <building-hud .simulation=${this.simulation}></building-hud>
+      <company-list .simulation=${this.simulation}></company-list>
     `;
   }
 } 

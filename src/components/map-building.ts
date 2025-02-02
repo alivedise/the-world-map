@@ -32,7 +32,6 @@ export class MapBuilding extends LitElement {
   `;
 
   private handleClick() {
-    console.log(this);
     this.dispatchEvent(new CustomEvent('building-click', {
       detail: { x: this.x, y: this.y, name: this.name },
       bubbles: true,
@@ -46,8 +45,8 @@ export class MapBuilding extends LitElement {
         class="building"
         @click="${this.handleClick}"
         style="width: ${this.width * 32}px; height: ${this.height * 32}px; left: ${this.x * 32}px; top: ${this.y * 32}px; background-color: ${this.color};"
+        alt="${this.name}"
       >
-        ${this.name}
       </div>
     `;
   }

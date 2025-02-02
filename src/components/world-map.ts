@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { WorldSimulation } from '../services/world-simulation';
 import './map-building'; // 引入建築元件
 import './map-citizen'; // 引入公民元件
+import './map-vehicle';
 
 @customElement('world-map')
 export class WorldMap extends LitElement {
@@ -40,6 +41,11 @@ export class WorldMap extends LitElement {
       const { x, y, name } = event.detail;
       console.log(`Citizen clicked: ${name} at x=${x}, y=${y}`);
     });
+
+    this.addEventListener('vehicle-click', (event) => {
+      const { x, y, id } = event.detail;
+      console.log(`Vehicle clicked: ${id} at x=${x}, y=${y}`);
+    });
   }
 
   disconnectedCallback() {
@@ -56,6 +62,7 @@ export class WorldMap extends LitElement {
     const blocks = this.simulation.gameState.blockManager.getAllBlocks();
     const buildings = this.simulation.gameState.buildingManager.buildings; // 獲取建築物列表
     const citizens = this.simulation.gameState.populationManager.getCitizens(); // 獲取公民列表
+    const vehicles = this.simulation.gameState.vehicleManager.getAllVehicles();
 
     return html`
       <div>
@@ -84,6 +91,12 @@ export class WorldMap extends LitElement {
             .name=${citizen.name}
             .color=${citizen.color}>
           </map-citizen>
+        `)}
+        ${vehicles.map(vehicle => html`
+          <map-vehicle
+            .vehicle=${vehicle}
+            .gridSize=${32}>
+          </map-vehicle>
         `)}
       </div>
     `;

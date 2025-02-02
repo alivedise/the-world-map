@@ -7,3 +7,4 @@ import './components/game-control-hud';
 import './components/general-statistics-hud';
 import './components/building-hud';
 import './components/map-citizen';
+import './components/company-list/company-list';
