@@ -80,13 +80,29 @@ export default class Citizen {
   }
 
   private executeCurrentAction() {
-    this.actionTicks++;
+    if (!this.currentAction) return;
 
-    // 檢查行動是否完成
-    if (this.actionTicks >= this.currentAction.duration) {
-      this.currentAction = null; // 行動完成
-      this.actionTicks = 0; // 重置計數器
+    const result = this.currentAction.update();
+    
+    if (result.subActionName) {
+      console.log(`${this.name} 正在${result.subActionName}`);
+      if (result.mood) {
+        this.updateMood(result.mood);
+      }
     }
+
+    if (result.completed) {
+      this.currentAction = null;
+      this.actionTicks = 0;
+    }
+  }
+
+  private updateMood(moodChange: number) {
+    // 將心情值轉換為描述性文字
+    const moodLevels = ['很不開心', '不開心', '普通', '開心', '很開心'];
+    const currentIndex = moodLevels.indexOf(this.mood);
+    const newIndex = Math.max(0, Math.min(4, currentIndex + Math.sign(moodChange)));
+    this.mood = moodLevels[newIndex];
   }
 
   private decideNextAction(context: {
