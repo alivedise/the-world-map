@@ -1,6 +1,6 @@
 import { BuildingType } from '../services/building-type';
 import { Product, ProductDefinition } from './Product';
-import { ProductRecipe } from './ProductRecipe';
+import { ProductRecipe, defaultRecipes } from './ProductRecipe';
 import { RecipeManager } from './RecipeManager';
 import { CompanyManager } from './CompanyManager';
 import { CompanyType } from './CompanyType';
@@ -23,6 +23,57 @@ export class Company {
     this.name = faker.company.name();
     this.type = type;
     this.buildingIds = new Set([buildingId]);
+    
+    // 初始化公司庫存，添加一些基礎原料以便能夠啟動生產
+    this.initializeInventory();
+  }
+
+  // 初始化公司庫存，添加基礎原料
+  private initializeInventory() {
+    // 為不同的公司類型添加適當的初始庫存
+    switch(this.type) {
+      case CompanyType.FARM:
+        // 農場不需要輸入材料，但為了安全起見還是添加一些
+        this.inventory.set('raw_materials', 10);
+        break;
+        
+      case CompanyType.RESTAURANT:
+        // 餐廳需要各種食材
+        this.inventory.set('vegetables', 10);
+        this.inventory.set('fruits', 8);
+        this.inventory.set('grains', 5);
+        break;
+        
+      case CompanyType.FACTORY:
+        // 工廠需要原材料和電子零件
+        this.inventory.set('raw_materials', 15);
+        this.inventory.set('electronic_parts', 10);
+        break;
+        
+      case CompanyType.RETAIL:
+        // 零售店需要各種產品
+        this.inventory.set('electronic_parts', 5);
+        this.inventory.set('personal_computer', 3);
+        this.inventory.set('smartphone', 4);
+        this.inventory.set('fruits', 5);
+        break;
+        
+      case CompanyType.TECH:
+        // 科技公司需要電子產品和其他技術資源
+        this.inventory.set('electronic_parts', 8);
+        this.inventory.set('personal_computer', 4);
+        this.inventory.set('cloud_service', 2);
+        break;
+        
+      case CompanyType.LOGISTICS:
+        // 物流公司需要原材料和燃料
+        this.inventory.set('raw_materials', 10);
+        break;
+        
+      default:
+        // 為其他公司類型添加通用材料
+        this.inventory.set('raw_materials', 5);
+    }
   }
 
   getId(): string {
@@ -57,6 +108,11 @@ export class Company {
     });
 
     if (!hasEnoughInputs) {
+      return false;
+    }
+
+    // 檢查是否已經在生產該配方
+    if (this.activeRecipes.has(recipe.id)) {
       return false;
     }
 
@@ -103,15 +159,26 @@ export class Company {
           producerId: this.id
         };
 
+        // 添加產品到庫存
+        this.addToInventory(product.name, product.quantity);
+
         completedProducts.push(product);
         this.activeRecipes.delete(recipeId);
       }
     }
 
-    // 自動開始新的生產（如果有可用配方）
-    const availableRecipes = context.recipeManager.getRecipesForType(this.type);
-    for (const recipe of availableRecipes) {
-      this.startProduction(recipe);
+    // 如果沒有活躍的生產配方，嘗試開始新的生產
+    if (this.activeRecipes.size < 2) {  // 限制同時生產的數量
+      const availableRecipes = context.recipeManager.getRecipesForType(this.type);
+      
+      // 嘗試開始每個可用配方的生產
+      for (const recipe of availableRecipes) {
+        const started = this.startProduction(recipe);
+        if (started) {
+          // 成功啟動生產，如果不想一次啟動太多生產，可以在這裡break
+          break;
+        }
+      }
     }
 
     return completedProducts;
@@ -142,12 +209,23 @@ export class Company {
   }
 
   // 取得此公司可以生產的產品
-  getProducibleProducts(): string[] {
-    const recipes = defaultRecipes.filter(recipe => 
-      recipe.producerType === this.type
-    );
+  getProducibleProducts(): { productName: string, recipeId: string }[] {
+    // Find recipes where this company is the producer type
+    console.log('Company type:', this.type);
+    console.log('All recipes:', defaultRecipes);
     
-    return recipes.map(recipe => recipe.output.productName);
+    const availableRecipes = defaultRecipes.filter(recipe => {
+      console.log('Checking recipe:', recipe.id, 'producerType:', recipe.producerType, 'matches?', recipe.producerType === this.type);
+      return recipe.producerType === this.type;
+    });
+    
+    console.log('Available recipes:', availableRecipes);
+    
+    // Return product details including recipe IDs
+    return availableRecipes.map(recipe => ({
+      productName: recipe.output.productName,
+      recipeId: recipe.id
+    }));
   }
 
   // 取得目前庫存狀態
@@ -157,4 +235,22 @@ export class Company {
       quantity
     }));
   }
-} 
+
+  // 取得公司地址（根據建築物ID）
+  getAddress(): string | null {
+    // 這裡可以根據建築物ID獲取地址，暫時返回第一個建築物ID
+    if (this.buildingIds.size > 0) {
+      return `Building ${Array.from(this.buildingIds)[0]}`;
+    }
+    return null;
+  }
+
+  // 取得目前進行中的生產
+  getActiveProductions(): [string, {
+    recipe: ProductRecipe;
+    progress: number;
+    remainingInputs: Map<string, number>;
+  }][] {
+    return Array.from(this.activeRecipes.entries());
+  }
+}

@@ -1,10 +1,11 @@
 import { ProductRecipe } from '../models/ProductRecipe';
 import { BuildingType } from '../models/building-type';
 import { defaultRecipes } from '../models/ProductRecipe';
+import { CompanyType } from '../models/CompanyType';
 
 export default class RecipeManager {
   private recipes: ProductRecipe[] = [];
-  private recipesByProducer: Map<BuildingType, ProductRecipe[]> = new Map();
+  private recipesByProducer: Map<CompanyType, ProductRecipe[]> = new Map();
 
   constructor(initialRecipes: ProductRecipe[] = defaultRecipes) {
     this.addRecipes(initialRecipes);
@@ -22,11 +23,11 @@ export default class RecipeManager {
     recipes.forEach(recipe => this.addRecipe(recipe));
   }
 
-  getRecipesForType(buildingType: BuildingType): ProductRecipe[] {
-    return this.recipesByProducer.get(buildingType) || [];
+  getRecipesForType(companyType: CompanyType): ProductRecipe[] {
+    return this.recipesByProducer.get(companyType) || [];
   }
 
   getRecipeById(id: string): ProductRecipe | undefined {
     return this.recipes.find(recipe => recipe.id === id);
   }
-} 
+}

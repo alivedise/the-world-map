@@ -68,6 +68,14 @@ export class GameState {
     return this.populationManager.getPopulation(); 
   }
 
+  // 修正: 使用普通方法取代getter
+  getBlockManager() { return this.blockManager; }
+  getBuildingManager() { return this.buildingManager; }
+  getPopulationManager() { return this.populationManager; }
+  getVehicleManager() { return this.vehicleManager; }
+  getCompanyManager() { return this.companyManager; }
+  getRecipeManager() { return this.recipeManager; }
+
   setGameSpeed(speed: number) {
     this._gameSpeed = speed;
     this.notifySubscribers();
@@ -122,4 +130,4 @@ export class GameState {
   handleBlockClick(x: number, y: number) {
     console.log(`點擊格子座標: x=${x}, y=${y}, 地形類型=${this.blockManager.getBlock(x, y)?.terrainType}`);
   }
-} 
+}

@@ -23,10 +23,24 @@ export class WorldSimulation {
 
   // 代理所有需要的 GameState 屬性
   get population() { return this.gameState.population; }
-  get building() { return this.gameState.buildingManager.buildings.length; }
+  get building() { return this.gameState.getBuildingManager().buildings.length; }
   get gameSpeed() { return this.gameState.gameSpeed; }
   get isPaused() { return this.gameState.isPaused; }
   get gameTime() { return this.gameState.gameTime; }
+
+  // 新增公開方法獲取必要的管理器數據
+  get blockManager() { return this.gameState.getBlockManager(); }
+  get buildingManager() { return this.gameState.getBuildingManager(); }
+  get populationManager() { return this.gameState.getPopulationManager(); }
+  get vehicleManager() { return this.gameState.getVehicleManager(); }
+  get companyManager() { return this.gameState.getCompanyManager(); }
+
+  // 新增更具體的方法用於組件使用
+  getBlocks() { return this.gameState.getBlockManager().getAllBlocks(); }
+  getBuildings() { return this.gameState.getBuildingManager().buildings; }
+  getCitizens() { return this.gameState.getPopulationManager().getCitizens(); }
+  getVehicles() { return this.gameState.getVehicleManager().getAllVehicles(); }
+  getCompanies() { return this.gameState.getCompanyManager().getCompanies(); }
 
   // 代理訂閱機制
   subscribe(callback: () => void) {
@@ -60,4 +74,4 @@ export class WorldSimulation {
   update(deltaTime: number) {
     this.gameState.update(deltaTime);
   }
-} 
+}

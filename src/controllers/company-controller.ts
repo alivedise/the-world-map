@@ -23,6 +23,24 @@ export class CompanyController implements ReactiveController {
   }
 
   get companies(): Company[] {
-    return Array.from(this.simulation.gameState.companyManager.companies.values());
+    try {
+      if (!this.simulation) {
+        console.error('Simulation is not initialized in CompanyController!');
+        return [];
+      }
+      
+      const companies = this.simulation.getCompanies();
+      console.log('CompanyController.companies getter called, returning:', companies);
+      
+      if (!companies || !Array.isArray(companies)) {
+        console.error('Companies is not an array or is undefined:', companies);
+        return [];
+      }
+      
+      return companies;
+    } catch (error) {
+      console.error('Error in CompanyController.companies getter:', error);
+      return [];
+    }
   }
-} 
+}

@@ -59,10 +59,10 @@ export class WorldMap extends LitElement {
   }
 
   render() {
-    const blocks = this.simulation.gameState.blockManager.getAllBlocks();
-    const buildings = this.simulation.gameState.buildingManager.buildings; // 獲取建築物列表
-    const citizens = this.simulation.gameState.populationManager.getCitizens(); // 獲取公民列表
-    const vehicles = this.simulation.gameState.vehicleManager.getAllVehicles();
+    const blocks = this.simulation.getBlocks();
+    const buildings = this.simulation.getBuildings(); // 獲取建築物列表
+    const citizens = this.simulation.getCitizens(); // 獲取公民列表
+    const vehicles = this.simulation.getVehicles();
 
     return html`
       <div>
@@ -101,4 +101,4 @@ export class WorldMap extends LitElement {
       </div>
     `;
   }
-} 
+}
