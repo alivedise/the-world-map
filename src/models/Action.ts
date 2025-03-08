@@ -1,6 +1,10 @@
 import { SubAction, RestSubActions } from './SubAction';
 
-export type ActionType = 'rest' | 'move' | 'work';
+export enum ActionType {
+  REST = 'rest',
+  MOVE = 'move',
+  WORK = 'work'
+}
 
 export class Action {
   type: ActionType;
@@ -12,7 +16,7 @@ export class Action {
     this.type = type;
     this.duration = duration;
     
-    if (type === 'rest') {
+    if (type === ActionType.REST) {
       this.generateRestSubActions();
     }
   }
@@ -30,7 +34,7 @@ export class Action {
   }
 
   update(): { completed: boolean; subActionName?: string; mood?: number } {
-    if (this.type !== 'rest') {
+    if (this.type !== ActionType.REST) {
       return { completed: false };
     }
 

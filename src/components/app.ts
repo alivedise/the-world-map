@@ -1,6 +1,9 @@
 import { LitElement, html, css } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { WorldSimulation } from '../services/world-simulation';
+import './action-history/action-history';
+import './company-list/company-list';
+import './world-map';
 
 @customElement('game-app')
 export class GameApp extends LitElement {
@@ -11,44 +14,63 @@ export class GameApp extends LitElement {
     this.simulation.subscribe(() => {
       this.requestUpdate();
     });
+    
+    // 啟動世界模擬
+    this.simulation.start();
     // window.addEventListener('click', (evt) => { console.log(evt); }, true)
   }
 
   static styles = css`
     :host {
-      display: block;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    
+
+    #game-container {
+      flex-grow: 1;
+      position: relative;
+      overflow: auto;
+      border: 1px solid #ccc;
+      margin: 10px;
+      padding: 10px;
+    }
+
+    .bottom-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    company-list {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    action-history {
+      width: 100%;
+    }
+
     world-map {
       display: block;
-    }
-    
-    fps-hud {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-    }
-    
-    game-control-hud {
-      position: absolute;
-      top: 10px;
-      left: 10px;
+      width: 100%;
+      height: 100%;
     }
   `;
 
   render() {
     return html`
-      <world-map .simulation=${this.simulation}></world-map>
-      <fps-hud></fps-hud>
-      <game-control-hud
-        .simulation=${this.simulation}
-      ></game-control-hud>
-      <general-statistics-hud
-        .simulation=${this.simulation}
-      ></general-statistics-hud>
-      <building-hud .simulation=${this.simulation}></building-hud>
-      <company-list .simulation=${this.simulation}></company-list>
+      <div id="game-container">
+        <world-map .simulation=${this.simulation}></world-map>
+      </div>
+      <div class="bottom-container">
+        ${this.simulation?.gameState ? 
+          html`<company-list .gameState=${this.simulation.gameState}></company-list>` : 
+          html`<div>Loading game state...</div>`
+        }
+        <action-history></action-history>
+      </div>
     `;
   }
 } 

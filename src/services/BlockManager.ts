@@ -41,4 +41,14 @@ export default class BlockManager {
   private isValidPosition(x: number, y: number): boolean {
     return y >= 0 && y < this.blocks.length && x >= 0 && x < this.blocks[0].length;
   }
+
+  // Return a map object with width and height for compatibility with WorldMap
+  getMap() {
+    return {
+      getMapSize: () => ({
+        width: this.blocks[0].length,
+        height: this.blocks.length
+      })
+    };
+  }
 } 

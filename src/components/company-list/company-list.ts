@@ -4,26 +4,34 @@ import { CompanyType, companyTypeDefinitions } from '../../models/CompanyType';
 import { Company } from '../../models/Company';
 import { WorldSimulation } from '../../services/world-simulation';
 import { CompanyController } from '../../controllers/company-controller';
+import { getProductIcon } from '../../utils/product-icons';
+import { getCompanyColor } from '../../utils/company-colors';
 
 @customElement('company-list')
 export class CompanyList extends LitElement {
   @property({ type: Object })
-  simulation!: WorldSimulation;
+  gameState: any;
 
   private companyController?: CompanyController;
 
-  // 確保在 simulation 更新後再創建 controller
+  // 確保在 gameState 更新後處理資料
   updated(changedProperties: Map<string, any>) {
-    if (changedProperties.has('simulation') && this.simulation) {
-      console.log('Creating CompanyController with simulation:', this.simulation);
-      this.companyController = new CompanyController(this, this.simulation);
+    if (changedProperties.has('gameState') && this.gameState) {
+      console.log('CompanyList receiving gameState:', this.gameState);
+      
+      // 檢查 gameState 是否初始化
+      if (!this.gameState.companyManager) {
+        console.error('CompanyManager not initialized in gameState:', this.gameState);
+      }
+      
+      this.requestUpdate();
     }
   }
 
   protected firstUpdated() {
-    if (this.simulation && !this.companyController) {
-      console.log('First updated: Creating CompanyController with simulation:', this.simulation);
-      this.companyController = new CompanyController(this, this.simulation);
+    if (this.gameState && !this.companyController) {
+      console.log('First updated: Creating CompanyController with gameState:', this.gameState);
+      this.companyController = new CompanyController(this, this.gameState);
     }
   }
 
@@ -34,8 +42,12 @@ export class CompanyList extends LitElement {
       background: rgba(255, 255, 255, 0.9);
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      max-height: 80vh;
+      max-height: 200px;
       overflow-y: auto;
+      font-family: 'Noto Sans TC', sans-serif;
+      width: 100%;
+      position: relative;
+      margin-top: 10px;
     }
 
     :host::-webkit-scrollbar {
@@ -151,20 +163,54 @@ export class CompanyList extends LitElement {
 
     .product-item {
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem;
-      background: #f0f8ff;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 6px 10px;
+      background-color: rgba(0, 0, 0, 0.05);
       border-radius: 4px;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
+      margin-bottom: 5px;
     }
-
+    
+    .product-info {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    
     .product-icon {
-      font-size: 1.2rem;
-      color: #4169E1;
+      font-size: 1.2em;
+      margin-right: 8px;
     }
-
+    
+    .product-icon.small {
+      font-size: 1em;
+    }
+    
+    .product-name {
+      font-weight: 500;
+      flex: 1;
+    }
+    
+    .production-status {
+      font-size: 0.8em;
+      margin-left: auto;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background-color: #e3f2fd;
+      color: #2196F3;
+    }
+    
+    .production-status.active {
+      background-color: #e8f5e9;
+      color: #4CAF50;
+    }
+    
+    .production-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
     .card {
       border-left: 4px solid #9E9E9E;
     }
@@ -231,55 +277,82 @@ export class CompanyList extends LitElement {
       justify-content: space-between;
       align-items: center;
     }
+    
+    .company-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 4px 8px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    
+    .info-label {
+      font-weight: 500;
+      color: #666;
+    }
+    
+    .info-value {
+      color: #333;
+    }
+    
+    .employee-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .speed-multiplier {
+      margin-left: auto;
+      padding: 2px 6px;
+      background-color: #e3f2fd;
+      color: #2196F3;
+      border-radius: 4px;
+      font-size: 0.8em;
+    }
+    
+    .add-employee-btn, .remove-employee-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    
+    .add-employee-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    
+    .remove-employee-btn {
+      background-color: #F44336;
+      color: white;
+    }
+
+    .loading-message {
+      padding: 1rem;
+      text-align: center;
+      color: #666;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 4px;
+      margin: 0.5rem 0;
+      font-style: italic;
+    }
   `;
 
   private renderCompanyCard(company: Company) {
-    // 使用更簡單的方式獲取數據，不依賴于可能不存在的方法
-    // const address = company.getAddress();
-    // const activeRecipes = [...company.getActiveProductions()];
-    
-    // 直接使用建築物 ID 列表
-    const buildings = company.getBuildings();
-    const address = buildings.length > 0 ? `Building ${buildings[0]}` : null;
-    
-    // 由於沒有getActiveProductions方法，我們暫時禁用生產狀態顯示
-    const activeRecipes: any[] = []; // 空數組
-    
+    // 使用更簡單的方式獲取數據
+    const address = company.getAddress();
+    const activeRecipes = [...company.getActiveProductions()];
+
     const producibleProducts = company.getProducibleProducts();
-
-    // 根據英文產品名稱選擇適當的圖標
-    const getProductIcon = (productName: string) => {
-      if (productName.includes('personal_computer') || productName.includes('pc')) return '💻';
-      if (productName.includes('smartphone')) return '📱';
-      if (productName.includes('software_app') || productName.includes('saas_solution') || 
-          productName.includes('ai_service') || productName.includes('cloud_service')) return '☁️';
-      if (productName.includes('meal') || productName.includes('food') || 
-          productName.includes('dessert')) return '🍽️';
-      if (productName.includes('vegetables')) return '🥬';
-      if (productName.includes('fruits')) return '🍎';
-      if (productName.includes('grains')) return '🌾';
-      if (productName.includes('electronic')) return '🔌';
-      if (productName.includes('logistics') || productName.includes('express_delivery') || 
-          productName.includes('warehousing')) return '🚚';
-      if (productName.includes('furniture')) return '🪑';
-      return '🔄'; // 默認圖標
-    };
-
-    // 為不同公司類型選擇顏色
-    const getCompanyColor = (type: CompanyType | string) => {
-      // 確保 type 是 CompanyType 類型
-      const companyType = typeof type === 'string' ? type as CompanyType : type;
-
-      switch(companyType) {
-        case CompanyType.FARM: return '#8BC34A';
-        case CompanyType.RESTAURANT: return '#FF9800';
-        case CompanyType.FACTORY: return '#607D8B';
-        case CompanyType.RETAIL: return '#E91E63';
-        case CompanyType.TECH: return '#2196F3';
-        case CompanyType.LOGISTICS: return '#9C27B0';
-        default: return '#9E9E9E';
-      }
-    };
 
     return html`
       <div class="card" style="border-left: 4px solid ${getCompanyColor(company.getType())};">
@@ -294,21 +367,45 @@ export class CompanyList extends LitElement {
           ${address ? html`<div class="address">📍 ${address}</div>` : ''}
         </div>
         
+        <div class="company-info">
+          <div class="employee-count">
+            <span class="info-label">員工:</span>
+            <span class="info-value">${company.getEmployees()}</span>
+          </div>
+          <div class="speed-multiplier">
+            速度: ${company.getSpeedMultiplier().toFixed(1)}x
+          </div>
+          <button class="add-employee-btn" @click="${() => this.addEmployee(company)}">+</button>
+          ${company.getEmployees() > 0 ? html`<button class="remove-employee-btn" @click="${() => this.removeEmployee(company)}">-</button>` : ''}
+        </div>
+        
         <div class="section">
           <h3>可生產產品</h3>
-          ${producibleProducts.length > 0 
-            ? producibleProducts.map(product => html`
-                <div class="product-item">
-                  <span class="product-icon">${getProductIcon(product.productName)}</span>
-                  <span class="product-name">${product.productName}</span>
-                </div>
-              `)
+          ${producibleProducts.length > 0
+            ? producibleProducts.map(product => {
+                return html`
+                  <div class="product-item">
+                    <div class="product-info">
+                      <span class="product-icon">${getProductIcon(product.productName)}</span>
+                      <span class="product-name">${product.productName}</span>
+                      ${product.isProducing 
+                        ? html`<span class="production-status active">生產中</span>` 
+                        : html`<span class="production-status">未生產</span>`
+                      }
+                    </div>
+                    ${product.isProducing ? html`
+                      <div class="progress-bar">
+                        <div class="progress" style="width: ${product.productionProgress}%"></div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              })
             : html`<div class="item no-production">無可生產產品</div>`
           }
         </div>
 
-        <!-- 暫時隱藏生產狀態部分 -->
-        <!-- <div class="section">
+        <div class="section">
           <h3>生產狀態</h3>
           ${activeRecipes.length > 0 
             ? activeRecipes.map(([recipeId, production]) => html`
@@ -324,7 +421,7 @@ export class CompanyList extends LitElement {
               `)
             : html`<div class="item no-production">目前沒有進行中的生產</div>`
           }
-        </div> -->
+        </div>
         
         <div class="section">
           <h3>庫存</h3>
@@ -343,23 +440,53 @@ export class CompanyList extends LitElement {
     `;
   }
 
+  addEmployee(company: Company) {
+    const currentEmployees = company.getEmployees();
+    company.setEmployees(currentEmployees + 1);
+    this.requestUpdate();
+  }
+
+  removeEmployee(company: Company) {
+    const currentEmployees = company.getEmployees();
+    company.setEmployees(Math.max(0, currentEmployees - 1));
+    this.requestUpdate();
+  }
+
   render() {
+    // 檢查 gameState 是否已連接和 CompanyController 是否已初始化
+    if (!this.gameState) {
+      return html`<div class="loading-message">等待 gameState 連接...</div>`;
+    }
+    
     if (!this.companyController) {
-      console.error('CompanyController is not initialized');
-      return html`<div>載入中...CompanyController未初始化</div>`;
+      // 如果 gameState 已連接但控制器尚未初始化，我們嘗試再次初始化它
+      console.log('CompanyController 尚未初始化，嘗試重新初始化...');
+      setTimeout(() => {
+        if (!this.companyController && this.gameState) {
+          this.companyController = new CompanyController(this, this.gameState);
+        }
+      }, 100);
+      return html`<div class="loading-message">初始化公司控制器中...</div>`;
     }
 
-    if (!this.companyController.companies || !Array.isArray(this.companyController.companies)) {
-      console.error('Companies is not an array:', this.companyController.companies);
-      return html`<div>載入中...無法獲取公司列表</div>`;
+    // 安全地獲取公司列表
+    let companies = [];
+    try {
+      companies = this.companyController.companies || [];
+      if (!Array.isArray(companies)) {
+        console.error('Companies is not an array:', companies);
+        companies = [];
+      }
+    } catch (e) {
+      console.error('Error getting companies:', e);
     }
 
-    console.log('Rendering company list with companies:', this.companyController.companies);
+    console.log('Rendering company list with companies:', companies);
 
     return html`
-      <h2 class="title">公司列表 (${this.companyController.companies.length}間)</h2>
+      <h2 class="title">公司列表 (${companies.length}間)</h2>
       <div class="list">
-        ${this.companyController.companies.map(company => {
+        ${companies.map(company => {
           // 添加額外的防錯檢查
           if (!company || typeof company !== 'object') {
             console.error('Invalid company object:', company);
@@ -386,6 +513,22 @@ export class CompanyList extends LitElement {
             }
             if (typeof company.getInventoryStatus !== 'function') {
               console.error('Company missing getInventoryStatus method:', company);
+              return html`<div>公司數據缺少必要方法</div>`;
+            }
+            if (typeof company.getActiveProductions !== 'function') {
+              console.error('Company missing getActiveProductions method:', company);
+              return html`<div>公司數據缺少必要方法</div>`;
+            }
+            if (typeof company.getEmployees !== 'function') {
+              console.error('Company missing getEmployees method:', company);
+              return html`<div>公司數據缺少必要方法</div>`;
+            }
+            if (typeof company.getSpeedMultiplier !== 'function') {
+              console.error('Company missing getSpeedMultiplier method:', company);
+              return html`<div>公司數據缺少必要方法</div>`;
+            }
+            if (typeof company.setEmployees !== 'function') {
+              console.error('Company missing setEmployees method:', company);
               return html`<div>公司數據缺少必要方法</div>`;
             }
             

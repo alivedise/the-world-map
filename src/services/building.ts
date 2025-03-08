@@ -22,6 +22,8 @@ export default class Building {
   public id: string;
   public name: string;
   public address: string;
+  public companyId: string | null = null;
+  public gameState: any = null;
 
   constructor(config: BuildingConfig) {
     this.id = this.generateId(); // 生成唯一的 id
@@ -91,5 +93,17 @@ export default class Building {
 
   getAddress(): string {
     return this.address;
+  }
+
+  getName(): string {
+    return this.name;
+  }
+
+  getId(): string {
+    return this.id;
+  }
+  
+  getPosition(): { x: number; y: number } {
+    return { ...this.position };
   }
 } 

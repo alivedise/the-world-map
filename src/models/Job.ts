@@ -6,18 +6,20 @@ export default class Job {
   title: string; // 工作職稱
   description: string; // 工作內容
   location: string; // 工作地點（對應建築 ID）
+  companyId: string | null = null; // 關聯的公司ID
   type: string;
   area: string;
   occupied: boolean; // 新增屬性，表示工作是否被佔用
   citizen?: Citizen; // 新增屬性，存儲對應的 Citizen
 
-  constructor(title: string, description: string, location: string) {
+  constructor(title: string, description: string, location: string, companyId: string | null = null) {
     this.id = this.generateId();
     this.title = faker.person.jobTitle();
     this.description = faker.person.jobDescriptor();
     this.type = faker.person.jobType();
     this.area = faker.person.jobArea();
     this.location = location;
+    this.companyId = companyId;
     this.occupied = false; // 初始化為未佔用
   }
 
@@ -33,8 +35,8 @@ export default class Job {
     this.occupied = true;
   }
 
-  public release() {
-    this.citizen?.quitJob();
+  public release(context?: any) {
+    this.citizen?.quitJob(context);
     this.citizen = undefined;
     this.occupied = false;
   }

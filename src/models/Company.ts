@@ -1,10 +1,11 @@
 import { BuildingType } from '../services/building-type';
-import { Product, ProductDefinition } from './Product';
+import { Product, ProductDefinition, defaultProducts } from './Product';
 import { ProductRecipe, defaultRecipes } from './ProductRecipe';
-import { RecipeManager } from './RecipeManager';
+import RecipeManager from '../services/recipe-manager';
 import { CompanyManager } from './CompanyManager';
 import { CompanyType } from './CompanyType';
 import { faker } from '@faker-js/faker';
+import { HistoryLogger } from '../services/history-logger';
 
 export class Company {
   private id: string;
@@ -17,6 +18,7 @@ export class Company {
     progress: number;
     remainingInputs: Map<string, number>;
   }> = new Map();
+  private employees: number = 0; // 公司員工數量
 
   constructor(name: string, type: CompanyType, buildingId: string) {
     this.id = `company-${Math.random().toString(36).substr(2, 9)}`;
@@ -131,6 +133,15 @@ export class Company {
       )
     });
 
+    // 記錄生產開始
+    const historyLogger = HistoryLogger.getInstance();
+    historyLogger.addLog(
+      'company', 
+      this.id, 
+      'start_production', 
+      `${this.name} 開始生產 ${recipe.output.productName}`
+    );
+
     return true;
   }
 
@@ -139,49 +150,111 @@ export class Company {
     this.inventory.set(productName, currentQuantity + quantity);
   }
 
-  update(deltaTime: number, context: {
-    recipeManager: RecipeManager;
-    companyManager: CompanyManager;
-  }): Product[] {
-    const completedProducts: Product[] = [];
+  // 產品完成時的處理方法
+  private handleProductCompletion(recipeId: string, recipe: ProductRecipe): Product[] {
+    // 將成功生產的產品添加到庫存
+    const outputProduct: Product = {
+      id: `product-${Math.random().toString(36).substr(2, 9)}`,
+      name: recipe.output.productName,
+      type: defaultProducts[recipe.output.productName]?.type || 'physical',
+      quantity: recipe.output.quantity,
+      producerId: this.id
+    };
+    
+    this.addToInventory(recipe.output.productName, recipe.output.quantity);
 
+    // 清空該配方的活動狀態
+    this.activeRecipes.delete(recipeId);
+    
+    // 記錄產品完成
+    const historyLogger = HistoryLogger.getInstance();
+    historyLogger.addLog(
+      'company', 
+      this.id, 
+      'finish_production', 
+      `${this.name} 完成了 ${recipe.output.productName} 的生產`
+    );
+
+    // 返回完成的產品信息，以便外層處理運輸
+    return [outputProduct];
+  }
+
+  // 更新公司狀態
+  update(deltaTime: number, context: {
+    vehicleManager: any;
+    recipeManager: RecipeManager;
+    companyManager: any;
+  }): Product[] {
+    // 初始化完成產品數組
+    const completedProducts: Product[] = [];
+    
+    // 計算生產速度倍率
+    const productionSpeedMultiplier = this.getSpeedMultiplier();
+    const adjustedDeltaTime = deltaTime * productionSpeedMultiplier;
+    
     // 更新生產進度
     for (const [recipeId, production] of this.activeRecipes.entries()) {
-      production.progress += deltaTime;
+      production.progress += adjustedDeltaTime;
+      const recipe = context.recipeManager.getRecipeById(recipeId);
       
-      if (production.progress >= production.recipe.productionTime) {
-        // 生產完成
-        const product: Product = {
-          id: `product-${Math.random().toString(36).substr(2, 9)}`,
-          name: production.recipe.output.productName,
-          type: 'physical',
-          quantity: production.recipe.output.quantity,
-          producerId: this.id
-        };
-
-        // 添加產品到庫存
-        this.addToInventory(product.name, product.quantity);
-
-        completedProducts.push(product);
-        this.activeRecipes.delete(recipeId);
+      if (recipe && production.progress >= recipe.productionTime) {
+        // 產品完成
+        const products = this.handleProductCompletion(recipeId, recipe);
+        completedProducts.push(...products);
       }
     }
+    
+    // 檢查是否需要啟動新的生產
+    this.checkAndStartProductions(context.recipeManager);
+    
+    return completedProducts;
+  }
 
-    // 如果沒有活躍的生產配方，嘗試開始新的生產
-    if (this.activeRecipes.size < 2) {  // 限制同時生產的數量
-      const availableRecipes = context.recipeManager.getRecipesForType(this.type);
-      
-      // 嘗試開始每個可用配方的生產
-      for (const recipe of availableRecipes) {
-        const started = this.startProduction(recipe);
-        if (started) {
-          // 成功啟動生產，如果不想一次啟動太多生產，可以在這裡break
-          break;
+  // 接收從別的公司運來的產品
+  receiveProduct(productName: string, quantity: number) {
+    this.addToInventory(productName, quantity);
+    
+    // 記錄產品接收
+    const historyLogger = HistoryLogger.getInstance();
+    historyLogger.addLog(
+      'company', 
+      this.id, 
+      'receive', 
+      `${this.name} 接收了 ${quantity} 個 ${productName}`
+    );
+
+    // 可以在這裡添加更多的處理邏輯，例如通知UI更新等
+    return true;
+  }
+
+  // 檢查是否有需求某個產品
+  needsProduct(productName: string, recipeManager?: RecipeManager): boolean {
+    if (!recipeManager) {
+      console.error('RecipeManager is required for needsProduct');
+      return false;
+    }
+    
+    // Get all recipes that this company can produce
+    const recipes = recipeManager.getRecipesForType(this.type);
+    if (!recipes || recipes.length === 0) return false;
+    
+    // Check if any recipe requires this product as an input
+    for (const recipe of recipes) {
+      for (const input of recipe.inputs) {
+        if (input.productName === productName) {
+          // Check current inventory to see if we need more
+          const currentInventory = this.inventory.get(productName) || 0;
+          return currentInventory < 10; // Return true if inventory is low
         }
       }
     }
+    
+    return false;
+  }
 
-    return completedProducts;
+  // 獲取生產速度倍率
+  getSpeedMultiplier(): number {
+    return Math.min(0.2 + this.employees * 0.2, 2.0);
   }
 
   canProduceRecipe(recipe: ProductRecipe): boolean {
@@ -209,7 +282,7 @@ export class Company {
   }
 
   // 取得此公司可以生產的產品
-  getProducibleProducts(): { productName: string, recipeId: string }[] {
+  getProducibleProducts(): { productName: string, recipeId: string, isProducing?: boolean, productionProgress?: number }[] {
     // Find recipes where this company is the producer type
     console.log('Company type:', this.type);
     console.log('All recipes:', defaultRecipes);
@@ -221,11 +294,21 @@ export class Company {
     
     console.log('Available recipes:', availableRecipes);
     
-    // Return product details including recipe IDs
-    return availableRecipes.map(recipe => ({
-      productName: recipe.output.productName,
-      recipeId: recipe.id
-    }));
+    // Return product details including recipe IDs and production status
+    return availableRecipes.map(recipe => {
+      const activeProduction = this.activeRecipes.get(recipe.id);
+      const isProducing = !!activeProduction;
+      const productionProgress = isProducing 
+        ? (activeProduction.progress / recipe.productionTime) * 100
+        : 0;
+        
+      return {
+        productName: recipe.output.productName,
+        recipeId: recipe.id,
+        isProducing,
+        productionProgress
+      };
+    });
   }
 
   // 取得目前庫存狀態
@@ -234,6 +317,47 @@ export class Company {
       productName,
       quantity
     }));
+  }
+
+  // 獲取公司庫存Map對象
+  getInventory(): Map<string, number> {
+    return this.inventory;
+  }
+  
+  /**
+   * Reduce the quantity of a product in inventory
+   * @param productName The name of the product to reduce
+   * @param quantity The quantity to remove from inventory
+   * @returns true if successful, false if not enough inventory
+   */
+  reduceInventory(productName: string, quantity: number): boolean {
+    const currentQuantity = this.inventory.get(productName) || 0;
+    
+    if (currentQuantity < quantity) {
+      // Not enough inventory
+      return false;
+    }
+    
+    this.inventory.set(productName, currentQuantity - quantity);
+    
+    // Log the inventory reduction
+    const historyLogger = HistoryLogger.getInstance();
+    historyLogger.addLog(
+      'company', 
+      this.id, 
+      'reduce_inventory', 
+      `${this.name} 從庫存中移除了 ${quantity} 個 ${productName}, 剩餘: ${currentQuantity - quantity}`
+    );
+    
+    return true;
+  }
+
+  // 獲取公司位置
+  getLocation(): { x: number, y: number } {
+    // 假設公司位置是第一個建築物的位置
+    // 在實際應用中應該從 buildingManager 獲取建築物位置
+    // 這裡提供一個默認位置，以便代碼能夠繼續運行
+    return { x: 13, y: 10 };
   }
 
   // 取得公司地址（根據建築物ID）
@@ -252,5 +376,30 @@ export class Company {
     remainingInputs: Map<string, number>;
   }][] {
     return Array.from(this.activeRecipes.entries());
+  }
+
+  getEmployees(): number {
+    return this.employees;
+  }
+
+  setEmployees(number: number) {
+    this.employees = number;
+  }
+
+  // 檢查並啟動新的生產
+  private checkAndStartProductions(recipeManager: RecipeManager) {
+    // 如果沒有活躍的生產配方，嘗試開始新的生產
+    if (this.activeRecipes.size < 2) {  // 限制同時生產的數量
+      const availableRecipes = recipeManager.getRecipesForType(this.type);
+      
+      // 嘗試開始每個可用配方的生產
+      for (const recipe of availableRecipes) {
+        const started = this.startProduction(recipe);
+        if (started) {
+          // 成功啟動生產，如果不想一次啟動太多生產，可以在這裡break
+          break;
+        }
+      }
+    }
   }
 }

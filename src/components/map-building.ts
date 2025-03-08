@@ -21,6 +21,9 @@ export class MapBuilding extends LitElement {
   @property({ type: String })
   color: string = '#000'; // 默認顏色
 
+  @property({ type: Number })
+  gridSize: number = 32;
+
   static styles = css`
     .building {
       position: absolute;
@@ -44,7 +47,7 @@ export class MapBuilding extends LitElement {
       <div
         class="building"
         @click="${this.handleClick}"
-        style="width: ${this.width * 32}px; height: ${this.height * 32}px; left: ${this.x * 32}px; top: ${this.y * 32}px; background-color: ${this.color};"
+        style="width: ${this.width * this.gridSize}px; height: ${this.height * this.gridSize}px; left: ${this.x * this.gridSize}px; top: ${this.y * this.gridSize}px; background-color: ${this.color};"
         alt="${this.name}"
       >
       </div>
